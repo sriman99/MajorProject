@@ -1,5 +1,5 @@
 export const assets = {
-  logo: "",
+  logo: "/logo.png",
   hero: {
     mainImage: "/67f907e9bd92c5e1c7e6bf02_erik-brolin-wmZNEGkcsmw-unsplash-removebg-preview 2 (1).png",
     playButton: "/67f907e9bd92c5e1c7e6bf01_Group 1.svg",
@@ -31,5 +31,7 @@ export const assets = {
     yogaPlus: "/67f907e9bd92c5e1c7e6bf0c_Yoga Plus.svg",
     onlineTraining: "/67f907e9bd92c5e1c7e6bf0e_Online Training.svg",
     cardio: "/67f907e9bd92c5e1c7e6bf0f_Cardio.svg",
+    blob1: "/67f907e9bd92c5e1c7e6bf24_Webclip YogaPlus.svg",
+    blob2: "/67f907e9bd92c5e1c7e6bf24_Webclip YogaPlus.svg",
   }
 } 
