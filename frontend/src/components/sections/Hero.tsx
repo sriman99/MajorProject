@@ -1,5 +1,6 @@
 import { Button } from "../ui/button"
 import { assets } from "../../config/assets"
+import { Link } from "react-router-dom"
 
 export function Hero() {
   return (
@@ -19,10 +20,19 @@ export function Hero() {
         <p className="text-xl text-gray-600 max-w-lg animate-fade-in-delay leading-relaxed">
           Detect respiratory issues through sound, consult doctors online, and track your health with our cutting-edge AI technology.
         </p>
-        <div className="flex space-x-4 animate-fade-in-delay-2">
-          <Button className="text-white bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90 shadow-lg hover:shadow-xl transition-all text-lg px-8 py-6 rounded-xl">
-            Get Started
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-delay-2">
+          <div className="bg-white rounded-full p-1 shadow-lg flex gap-1">
+            <Link to="/appointments" className="flex-1">
+              <Button className="w-full text-white bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90 shadow-lg hover:shadow-xl transition-all text-lg px-8 py-6 rounded-full">
+                Book Appointment
+              </Button>
+            </Link>
+            <Link to="/hospitals" className="flex-1">
+              <Button variant="ghost" className="w-full text-[#1a2352] hover:bg-gray-50 transition-all text-lg px-8 py-6 rounded-full">
+                Find Hospital
+              </Button>
+            </Link>
+          </div>
           <Button 
             variant="outline" 
             className="border-2 border-[#ff7757] text-[#ff7757] hover:bg-[#ff7757]/10 transition-all text-lg px-8 py-6 rounded-xl group"

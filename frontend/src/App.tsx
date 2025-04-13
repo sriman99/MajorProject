@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
+import Appointments from './pages/Appointments'
+import Hospitals from './pages/Hospitals'
 import { Navigation } from './components/sections/Navigation'
 import { Footer } from './components/sections/Footer'
 const queryClient = new QueryClient()
@@ -19,6 +21,8 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/appointments" element={<Appointments />} />
+            <Route path="/hospitals" element={<Hospitals />} />
           </Routes>
           <Footer />
         </div>
