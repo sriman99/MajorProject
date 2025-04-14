@@ -11,6 +11,7 @@ import Hospitals from './pages/Hospitals'
 import { Navigation } from './components/sections/Navigation'
 import { Footer } from './components/sections/Footer'
 import HowItWorks from './pages/HowItWorks'
+import { Testimonials } from './components/sections/Testimonials'
 const queryClient = new QueryClient()
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
             <Route path="/appointments" element={<Appointments />} />
             <Route path="/hospitals" element={<Hospitals />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/testimonials" element={<Testimonials />} />
           </Routes>
           <Footer />
         </div>

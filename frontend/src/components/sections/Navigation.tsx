@@ -16,15 +16,15 @@ export function Navigation() {
           Features
           <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
         </Link>
-        <a href="#testimonials" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+        <a href="/testimonials" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
           Testimonials
           <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
         </a>
-        <a href="#how-it-works" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+        <a href="/how-it-works" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
           How it works
           <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
         </a>
-        <a href="#contact" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+        <a href="/contact" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
           Contact
           <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
         </a>

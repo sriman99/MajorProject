@@ -1,5 +1,4 @@
 import { Button } from "../ui/button"
-import { assets } from "../../config/assets"
 import { Link } from "react-router-dom"
 
 export function Hero() {
