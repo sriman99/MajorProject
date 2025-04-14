@@ -42,7 +42,7 @@ export function Contact() {
   }
 
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+    <section className="py-20 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden transition-all duration-300" id="contact">
       {/* Decorative elements */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.img 

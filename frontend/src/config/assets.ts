@@ -33,5 +33,11 @@ export const assets = {
     cardio: "/67f907e9bd92c5e1c7e6bf0f_Cardio.svg",
     blob1: "/67f907e9bd92c5e1c7e6bf24_Webclip YogaPlus.svg",
     blob2: "/67f907e9bd92c5e1c7e6bf24_Webclip YogaPlus.svg",
+  },
+  howItWorks: {
+    image1: "/Voice.jpg",
+    image2:"/Ai_analysis.png",
+    image3:"/medical_report.jpg",
+    image4:"/seggestion.jpg"
   }
 } 

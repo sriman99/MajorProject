@@ -22,24 +22,25 @@ export function Hero() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-delay-2">
           <div className="bg-white rounded-full p-1 shadow-lg flex gap-1">
-            <Link to="/appointments" className="flex-1">
+            <Link to="/analysis" className="flex-1">
               <Button className="w-full text-white bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90 shadow-lg hover:shadow-xl transition-all text-lg px-8 py-6 rounded-full">
+                Start Analysis
+              </Button>
+            </Link>
+            <Link to="/appointments" className="flex-1">
+              <Button variant="ghost" className="w-full text-[#1a2352] hover:bg-gray-50 transition-all text-lg px-8 py-6 rounded-full">
                 Book Appointment
               </Button>
             </Link>
-            <Link to="/hospitals" className="flex-1">
-              <Button variant="ghost" className="w-full text-[#1a2352] hover:bg-gray-50 transition-all text-lg px-8 py-6 rounded-full">
-                Find Hospital
-              </Button>
-            </Link>
           </div>
-          <Button 
-            variant="outline" 
-            className="border-2 border-[#ff7757] text-[#ff7757] hover:bg-[#ff7757]/10 transition-all text-lg px-8 py-6 rounded-xl group"
-          >
-            <img src={assets.hero.playButton} alt="Play" className="w-3 h-3 mr-2 group-hover:scale-110 transition-transform" />
-            Watch Video
-          </Button>
+          <Link to="/hospitals">
+            <Button 
+              variant="outline" 
+              className="border-2 border-[#ff7757] text-[#ff7757] hover:bg-[#ff7757]/10 transition-all text-lg px-8 py-6 rounded-xl"
+            >
+              Find Hospital
+            </Button>
+          </Link>
         </div>
       </div>
       <div className="md:w-1/2 mt-10 md:mt-0 relative animate-float">
