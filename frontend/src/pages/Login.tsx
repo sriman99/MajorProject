@@ -4,8 +4,16 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { assets } from "../config/assets"
 import { motion } from "framer-motion"
+import axios from "axios"
+import { useNavigate } from "react-router-dom"
+import { toast } from "react-hot-toast"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function Login() {
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  const { login } = useAuth()
+  
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -16,18 +24,92 @@ export default function Login() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
     
-    if (!formData.email) newErrors.email = "Email is required"
+    if (!formData.email) {
+      newErrors.email = "Email is required"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email format is invalid"
+    }
     if (!formData.password) newErrors.password = "Password is required"
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("Form submitted with data:", formData) // Debug log
+    
     if (validateForm()) {
-      // Handle form submission
-      console.log("Form submitted:", formData)
+      setLoading(true)
+      try {
+        // Create the request payload
+        const loginData = {
+          username: formData.email,
+          password: formData.password
+        }
+        console.log("Sending request with:", loginData) // Debug log
+
+        // Set the correct headers
+        const response = await axios.post("http://localhost:8000/token", 
+          new URLSearchParams({
+            username: formData.email,
+            password: formData.password
+          }).toString(),
+          {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            }
+          }
+        )
+        
+        console.log("Response received:", response.data) // Debug log
+        
+        // Use the auth hook to login
+        login(response.data.access_token)
+        
+        // Show success message
+        toast.success("Login successful!")
+        
+        // Reset form
+        setFormData({
+          email: "",
+          password: ""
+        })
+        
+        // Navigate to home page after a short delay
+        setTimeout(() => {
+          navigate("/")
+        }, 1500)
+        
+      } catch (error: any) {
+        console.error("Login error:", error.response?.data || error) // Debug log
+        
+        // Handle different types of errors
+        if (error.response?.status === 422) {
+          // Handle validation errors from the server
+          const serverErrors = error.response.data.detail || []
+          const newErrors: Record<string, string> = {}
+          
+          serverErrors.forEach((err: any) => {
+            console.log("Processing error:", err) // Debug log
+            if (err.loc && err.loc[1]) {
+              const field = err.loc[1] === "username" ? "email" : err.loc[1]
+              newErrors[field] = err.msg
+            }
+          })
+          
+          setErrors(newErrors)
+          toast.error("Please check your input and try again")
+        } else if (error.response?.status === 401) {
+          // Handle invalid credentials
+          toast.error("Invalid email or password")
+        } else {
+          // Handle other errors
+          toast.error("An error occurred. Please try again later")
+        }
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -178,8 +260,16 @@ export default function Login() {
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-to-r from-[#1a2352] to-[#ff7757] hover:from-[#ff7757] hover:to-[#1a2352] text-white py-6 text-lg transition-all duration-300"
+                disabled={loading}
               >
-                Sign In
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-5 h-5 border-t-2 border-white border-solid rounded-full animate-spin mr-2"></div>
+                    Signing in...
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </motion.div>
 

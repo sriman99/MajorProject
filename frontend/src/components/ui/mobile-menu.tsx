@@ -1,50 +1,79 @@
-import { useState } from 'react'
-import { Button } from './button'
+import { Sheet, SheetContent, SheetTrigger } from "./sheet"
+import { Button } from "./button"
+import { Menu } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
+import { UserCircle, LogOut } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
+import { toast } from "react-hot-toast"
 
 export function MobileMenu() {
-  const [isOpen, setIsOpen] = useState(false)
+  const navigate = useNavigate()
+  const { isLoggedIn, logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+    toast.success('Logged out successfully')
+  }
 
   return (
-    <div className="md:hidden">
-      <Button
-        variant="ghost"
-        className="p-2"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          {isOpen ? (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
+    <Sheet>
+      <SheetTrigger asChild className="md:hidden">
+        <Button variant="ghost" size="icon">
+          <Menu className="h-6 w-6" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+        <nav className="flex flex-col gap-4">
+          <Link to="/" className="block px-2 py-1 text-lg">
+            Home
+          </Link>
+          <Link to="/features" className="block px-2 py-1 text-lg">
+            Features
+          </Link>
+          <Link to="/testimonials" className="block px-2 py-1 text-lg">
+            Testimonials
+          </Link>
+          <Link to="/how-it-works" className="block px-2 py-1 text-lg">
+            How it works
+          </Link>
+          <Link to="/contact" className="block px-2 py-1 text-lg">
+            Contact
+          </Link>
+          
+          {isLoggedIn ? (
+            <div className="flex flex-col gap-4 mt-4">
+              <Button
+                variant="ghost"
+                className="text-[#1a2352] hover:text-[#ff7757] transition-colors justify-start"
+                asChild
+              >
+                <Link to="/profile">
+                  <UserCircle className="w-5 h-5 mr-2" />
+                  Profile
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                className="border-[#ff7757] text-[#ff7757] hover:bg-[#ff7757]/10 justify-start"
+                onClick={handleLogout}
+              >
+                <LogOut className="w-5 h-5 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           ) : (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
+            <div className="flex flex-col gap-4 mt-4">
+              <Button asChild variant="outline" className="border-[#ff7757] text-[#ff7757] hover:bg-[#ff7757]/10">
+                <Link to="/login">Sign In</Link>
+              </Button>
+              <Button asChild className="bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90">
+                <Link to="/signup">Sign Up</Link>
+              </Button>
+            </div>
           )}
-        </svg>
-      </Button>
-
-      {isOpen && (
-        <div className="absolute top-16 left-0 right-0 bg-white shadow-lg p-4 space-y-4">
-          <a href="#" className="block text-[#1a2352] hover:text-[#ff7757]">Home</a>
-          <a href="#features" className="block text-[#1a2352] hover:text-[#ff7757]">Features</a>
-          <a href="#testimonials" className="block text-[#1a2352] hover:text-[#ff7757]">Testimonials</a>
-          <a href="#how-it-works" className="block text-[#1a2352] hover:text-[#ff7757]">How it works</a>
-          <a href="#contact" className="block text-[#1a2352] hover:text-[#ff7757]">Contact</a>
-          <Button className="w-full bg-[#ff7757] hover:bg-[#ff7757]/90">Sign Up</Button>
-        </div>
-      )}
-    </div>
+        </nav>
+      </SheetContent>
+    </Sheet>
   )
 } 
