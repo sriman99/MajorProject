@@ -3,10 +3,11 @@ import { Button } from "../components/ui/button"
 import { motion } from "framer-motion"
 import { Upload, Mic, Activity, AlertCircle } from "lucide-react"
 import { RecordingModal } from "../components/ui/recording-modal"
+import { Link } from "react-router-dom"
 
 export default function RespiratoryAnalysis() {
   const [isRecording, setIsRecording] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [, setSelectedFile] = useState<File | null>(null)
   const [analysisResult, setAnalysisResult] = useState<{
     status: 'normal' | 'warning' | 'critical' | null
     message: string
@@ -147,11 +148,14 @@ export default function RespiratoryAnalysis() {
               </div>
 
               <div className="mt-8 flex justify-end">
-                <Button
-                  className="bg-[#ff7757] text-white px-6 py-3 rounded-lg hover:opacity-90 transition-opacity"
-                >
-                  Schedule Doctor Consultation
-                </Button>
+                <Link to="/appointments">
+                  <Button
+                    className="bg-[#ff7757] text-white px-6 py-3 rounded-lg hover:opacity-90 transition-opacity"
+                  >
+                    Schedule Doctor Consultation
+                  </Button>
+                </Link>
+                
               </div>
             </motion.div>
           )}

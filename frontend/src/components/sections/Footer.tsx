@@ -1,11 +1,12 @@
+import { Link } from "react-router-dom"
 import { assets } from "../../config/assets"
 
 export function Footer() {
   const footerLinks = [
-    { name: "Home", href: "#" },
-    { name: "Features", href: "#features" },
-    { name: "Testimonials", href: "#testimonials" },
-    { name: "Contact", href: "#contact" }
+    { name: "Home", href: "/" },
+    { name: "Features", href: "/features" },
+    { name: "Testimonials", href: "/testimonials" },
+    { name: "Contact", href: "/contact" }
   ]
 
   const socialLinks = [
@@ -15,7 +16,7 @@ export function Footer() {
   ]
 
   return (
-    <footer className="bg-gradient-to-b from-white to-gray-50 py-16 border-t border-gray-100 relative overflow-hidden">
+    <footer className="bg-gradient-to-b from-white to-gray-50 py-10 border-t border-gray-100 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-tr from-[#ff7757]/5 via-transparent to-[#1a2352]/5 rounded-3xl blur-3xl -z-10" />
       <div className="absolute inset-0 pointer-events-none">
         <img 
@@ -33,9 +34,12 @@ export function Footer() {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-8">
           <div className="flex items-center">
-            <span className="text-3xl font-bold bg-gradient-to-r from-[#1a2352] to-[#ff7757] bg-clip-text text-transparent">
+            {/* <span className="text-3xl font-bold bg-gradient-to-r from-[#1a2352] to-[#ff7757] bg-clip-text text-transparent">
               NeumoAI
-            </span>
+            </span> */}
+            <Link to="/">
+              <img src="logo.png" alt="" className="w-30 h-17" />
+            </Link>
           </div>
 
           <nav className="flex flex-wrap justify-center gap-8">
@@ -65,7 +69,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center">
+        <div className="border-t border-gray-100 pt-2 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-600 mb-4 md:mb-0">
             © {new Date().getFullYear()} NeumoAI. All rights reserved
           </p>

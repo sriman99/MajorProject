@@ -130,7 +130,7 @@ export default function SignUp() {
 
       <div className="container mx-auto px-4 py-16 relative z-10">
         <motion.div 
-          className="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8"
+          className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -144,7 +144,7 @@ export default function SignUp() {
             <motion.img 
               src={assets.logo} 
               alt="NeumoAI Logo" 
-              className="w-16 h-16 mx-auto mb-4"
+              className="w-30 h-17 mx-auto mb-4"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             />

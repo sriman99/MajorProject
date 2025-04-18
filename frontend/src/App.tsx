@@ -13,6 +13,12 @@ import { Navigation } from './components/sections/Navigation'
 import { Footer } from './components/sections/Footer'
 import HowItWorks from './pages/HowItWorks'
 import { Testimonials } from './components/sections/Testimonials'
+import PatientDashboard from './pages/patient/Dashboard'
+import DoctorDashboard from './pages/doctor/Dashboard'
+import AdminDashboard from './pages/admin/Dashboard'
+import Contact from './pages/Contact'
+import { ChatBot } from './components/chat/ChatBot'
+
 import NotFound from './pages/NotFound'
 
 const queryClient = new QueryClient()
@@ -34,9 +40,14 @@ function App() {
             <Route path="/hospitals" element={<Hospitals />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/testimonials" element={<Testimonials />} />
+            <Route path="/patient/dashboard" element={<PatientDashboard />} />
+            <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Footer />
+          <ChatBot />
         </div>
       </Router>
       <ReactQueryDevtools initialIsOpen={false} />

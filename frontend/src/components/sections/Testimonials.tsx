@@ -121,11 +121,11 @@ export const Testimonials = () => {
           </button>
         </div>
 
-        <div className="flex justify-center mt-12">
+        {/* <div className="flex justify-center mt-12">
           <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
             View More Testimonials
           </button>
-        </div>
+        </div> */}
       </div>
     </section>
   )

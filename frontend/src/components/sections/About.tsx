@@ -1,9 +1,10 @@
+import { Link } from "react-router-dom"
 import { assets } from "../../config/assets"
 import { Button } from "../ui/button"
 
 export function About() {
   return (
-    <section id="about" className="py-32 relative overflow-hidden">
+    <section id="about" className="py-32 pl-10 pr-10 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-tr from-[#ff7757]/5 via-transparent to-[#1a2352]/5 rounded-3xl blur-3xl -z-10" />
       <img 
         src="/67f907e9bd92c5e1c7e6bf03_100.svg" 
@@ -43,7 +44,7 @@ export function About() {
           </div>
           <div className="space-y-8">
             <div className="inline-block">
-              <span className="text-[#ff7757] bg-[#ff7757]/10 px-4 py-2 rounded-full text-sm font-medium">
+              <span className="text-[#ff7757] bg-[#ff7757]/10 px-4 py-2 rounded-full text-md font-medium">
                 About Us
               </span>
             </div>
@@ -54,12 +55,16 @@ export function About() {
               AI-powered web platform that helps users detect respiratory diseases through breathing sound analysis, while providing video consultations with doctors and health monitoring features.
             </p>
             <div className="flex space-x-4">
-              <Button className="text-white bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90 shadow-lg hover:shadow-xl transition-all">
-                Sign up
-              </Button>
-              <Button variant="outline" className="border-[#ff7757] text-[#ff7757] hover:bg-[#ff7757]/10">
-                Learn More
-              </Button>
+              <Link to="/signup">
+                <Button className="text-white bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90 shadow-lg hover:shadow-xl transition-all">
+                  Sign up
+                </Button>
+              </Link>
+              <Link to="/how-it-works">
+                <Button variant="outline" className="border-[#ff7757] text-[#ff7757] hover:bg-[#ff7757]/10">
+                  Learn More
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
