@@ -5,9 +5,15 @@ class WebSocketService {
   private socket: WebSocket | null = null;
   private messageCallbacks: MessageCallback[] = [];
   private connectionCallbacks: ConnectionCallback[] = [];
-  private mockMode = true; // Set to false when real WebSocket server is ready
+  private mockMode = false; // Set to false to use real WebSocket server
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 3;
+  private backendUrl: string;
+
+  constructor() {
+    // Get the backend URL from environment variables or use a default
+    this.backendUrl = import.meta.env.VITE_BACKEND_URL || 'ws://localhost:8000';
+  }
 
   connect(doctorId: string, userId: string) {
     if (this.mockMode) {
@@ -17,9 +23,9 @@ class WebSocketService {
     }
 
     try {
-      // In production, use wss:// and your actual WebSocket server URL
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'wss://your-production-ws-server.com';
-      this.socket = new WebSocket(`${wsUrl}/chat?doctorId=${doctorId}&userId=${userId}`);
+      const wsUrl = `${this.backendUrl}/chat/${doctorId}/${userId}`;
+      console.log(`Connecting to WebSocket at ${wsUrl}`);
+      this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
         console.log('WebSocket connected');
@@ -28,8 +34,16 @@ class WebSocketService {
       };
 
       this.socket.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        this.messageCallbacks.forEach(callback => callback(message));
+        try {
+          const message = JSON.parse(event.data);
+          console.log('Received message:', message);
+          this.messageCallbacks.forEach(callback => callback({
+            text: message.text,
+            sender: message.sender
+          }));
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
       };
 
       this.socket.onclose = () => {
@@ -78,7 +92,11 @@ class WebSocketService {
     }
 
     if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify({ text: message, sender: "user" }));
+      const messageObject = {
+        text: message,
+        timestamp: new Date().toISOString()
+      };
+      this.socket.send(JSON.stringify(messageObject));
     } else {
       this.notifyConnectionStatus('error', 'Chat service is not connected');
     }
@@ -107,4 +125,4 @@ class WebSocketService {
   }
 }
 
-export const chatService = new WebSocketService(); 
+export const chatService = new WebSocketService();
