@@ -1,8 +1,8 @@
 import { Button } from "../ui/button"
-
+import { Link } from "react-router-dom"
 export function Mission() {
   return (
-    <section className="py-32 relative overflow-hidden">
+    <section className="py-32 relative pl-10 pr-10 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-bl from-[#ff7757]/5 via-transparent to-[#1a2352]/5 rounded-3xl blur-3xl -z-10" />
       <img 
         src="/67f907e9bd92c5e1c7e6bf06_12.svg" 
@@ -13,7 +13,7 @@ export function Mission() {
         <div className="grid md:grid-cols-2 gap-16 items-center">
           <div className="space-y-8 order-2 md:order-1">
             <div className="inline-block">
-              <span className="text-[#ff7757] bg-[#ff7757]/10 px-4 py-2 rounded-full text-sm font-medium">
+              <span className="text-[#ff7757] bg-[#ff7757]/10 px-4 py-2 rounded-full text-md font-medium">
                 Mission
               </span>
             </div>
@@ -30,12 +30,17 @@ export function Mission() {
               <span className="font-semibold text-[#1a2352]">human</span>.
             </p>
             <div className="flex space-x-4">
-              <Button className="text-white bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90 shadow-lg hover:shadow-xl transition-all">
-                Sign Up
-              </Button>
-              <Button variant="outline" className="border-[#ff7757] text-[#ff7757] hover:bg-[#ff7757]/10">
-                Learn More
-              </Button>
+              <Link to="/signup">
+                <Button className="text-white bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90 shadow-lg hover:shadow-xl transition-all">
+                  Sign Up
+                </Button>
+              </Link>
+              <Link to="/how-it-works">
+                <Button variant="outline" className="border-[#ff7757] text-[#ff7757] hover:bg-[#ff7757]/10">
+                  Learn More
+                </Button>
+              </Link>
+              
             </div>
           </div>
           <div className="order-1 md:order-2">

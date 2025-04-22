@@ -5,14 +5,20 @@ import { Label } from "../components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { assets } from "../config/assets"
 import { motion } from "framer-motion"
+import axios from "axios"
+import { useNavigate } from "react-router-dom"
+import { toast } from "react-hot-toast"
 
 export default function SignUp() {
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  
   const [formData, setFormData] = useState({
-    fullName: "",
+    full_name: "",
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
+    confirm_password: "",
     role: ""
   })
 
@@ -21,26 +27,70 @@ export default function SignUp() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
     
-    if (!formData.fullName) newErrors.fullName = "Full name is required"
-    if (!formData.email) newErrors.email = "Email is required"
+    if (!formData.full_name) newErrors.full_name = "Full name is required"
+    if (!formData.email) {
+      newErrors.email = "Email is required"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email format is invalid"
+    }
     if (!formData.phone) newErrors.phone = "Phone number is required"
     if (!formData.password) newErrors.password = "Password is required"
-    if (!formData.confirmPassword) newErrors.confirmPassword = "Please confirm your password"
+    if (!formData.confirm_password) newErrors.confirm_password = "Please confirm your password"
     if (!formData.role) newErrors.role = "Please select a role"
     
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match"
+    if (formData.password !== formData.confirm_password) {
+      newErrors.confirm_password = "Passwords do not match"
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (validateForm()) {
-      // Handle form submission
-      console.log("Form submitted:", formData)
+      setLoading(true)
+      try {
+        const response = await axios.post("http://localhost:8000/signup", formData)
+        console.log(response)
+        
+        // Show success message
+        toast.success("Account created successfully!")
+        
+        // Reset form
+        setFormData({
+          full_name: "",
+          email: "",
+          phone: "",
+          password: "",
+          confirm_password: "",
+          role: ""
+        })
+        
+        // Navigate to home page after a short delay
+        setTimeout(() => {
+          navigate("/")
+        }, 1500)
+        
+      } catch (error: any) {
+        console.error(error)
+        
+        // Handle different types of errors
+        if (error.response?.status === 422) {
+          // Handle validation errors from the server
+          const serverErrors = error.response.data.errors || {}
+          setErrors(serverErrors)
+          toast.error("Please check your input and try again")
+        } else if (error.response?.status === 409) {
+          // Handle duplicate email/phone
+          toast.error("Email or phone number already exists")
+        } else {
+          // Handle other errors
+          toast.error("An error occurred. Please try again later")
+        }
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -80,7 +130,7 @@ export default function SignUp() {
 
       <div className="container mx-auto px-4 py-16 relative z-10">
         <motion.div 
-          className="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8"
+          className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -94,7 +144,7 @@ export default function SignUp() {
             <motion.img 
               src={assets.logo} 
               alt="NeumoAI Logo" 
-              className="w-16 h-16 mx-auto mb-4"
+              className="w-30 h-17 mx-auto mb-4"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             />
@@ -109,22 +159,22 @@ export default function SignUp() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="full_name">Full Name</Label>
               <Input
-                id="fullName"
+                id="full_name"
                 type="text"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                className={errors.fullName ? "border-red-500" : ""}
+                value={formData.full_name}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                className={errors.full_name ? "border-red-500" : ""}
               />
-              {errors.fullName && (
+              {errors.full_name && (
                 <motion.p 
                   className="text-red-500 text-sm"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {errors.fullName}
+                  {errors.full_name}
                 </motion.p>
               )}
             </motion.div>
@@ -197,7 +247,7 @@ export default function SignUp() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="doctor">Doctor</SelectItem>
-                  <SelectItem value="patient">Patient</SelectItem>
+                  <SelectItem value="user">Patient</SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && (
@@ -244,22 +294,22 @@ export default function SignUp() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.8 }}
             >
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirm_password">Confirm Password</Label>
               <Input
-                id="confirmPassword"
+                id="confirm_password"
                 type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className={errors.confirmPassword ? "border-red-500" : ""}
+                value={formData.confirm_password}
+                onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
+                className={errors.confirm_password ? "border-red-500" : ""}
               />
-              {errors.confirmPassword && (
+              {errors.confirm_password && (
                 <motion.p 
                   className="text-red-500 text-sm"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {errors.confirmPassword}
+                  {errors.confirm_password}
                 </motion.p>
               )}
             </motion.div>
@@ -279,8 +329,16 @@ export default function SignUp() {
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-to-r from-[#1a2352] to-[#ff7757] hover:from-[#ff7757] hover:to-[#1a2352] text-white py-6 text-lg transition-all duration-300"
+                disabled={loading}
               >
-                Create Account
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-5 h-5 border-t-2 border-white border-solid rounded-full animate-spin mr-2"></div>
+                    Creating Account...
+                  </div>
+                ) : (
+                  "Create Account"
+                )}
               </Button>
             </motion.div>
 

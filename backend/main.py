@@ -704,6 +704,30 @@ async def get_analysis(current_user = Depends(get_current_active_user)):
         ) for analysis in analyses
     ]
 
+@app.post("/api/analysis/lung-disease")
+async def analyze_lung_disease(
+    audio_file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    # Forward the request to ML service
+    files = {'audio_file': audio_file.file}
+    response = requests.post('http://localhost:8000/predict', files=files)
+    
+    if response.status_code == 200:
+        result = response.json()
+        
+        # Store analysis result in database
+        analysis_data = {
+            "user_id": current_user.id,
+            "type": "lung_disease",
+            "result": result,
+            "timestamp": datetime.utcnow()
+        }
+        analysis_collection.insert_one(analysis_data)
+        
+        return result
+    else:
+        raise HTTPException(status_code=500, detail="Prediction service error")
 # =============================================
 # ROOT ENDPOINT
 # =============================================
