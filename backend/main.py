@@ -58,6 +58,7 @@ class UserBase(BaseModel):
     full_name: str
     phone: str
     role: Literal["admin", "doctor", "user"]
+    username: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -72,6 +73,12 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: str
     is_active: bool = True
+
+    class Config:
+        from_attributes = True
+
+class UserWithDoctorProfile(User):
+    doctor_profile: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
@@ -170,7 +177,7 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 def get_user(username: str):
-    user = users_collection.find_one({"username": username})
+    user = users_collection.find_one({"email": username})
     return user
 
 def authenticate_user(username: str, password: str):
@@ -252,6 +259,10 @@ async def signup(user: UserCreate):
     user_dict["is_active"] = True
     user_dict["id"] = str(uuid.uuid4())
     
+    # Set username to email if not provided
+    if not user_dict.get("username"):
+        user_dict["username"] = user_dict["email"]
+    
     users_collection.insert_one(user_dict)
     
     # If user is a doctor, create a doctor profile
@@ -277,7 +288,8 @@ async def signup(user: UserCreate):
         full_name=user_dict["full_name"],
         phone=user_dict["phone"],
         role=user_dict["role"],
-        is_active=user_dict["is_active"]
+        is_active=user_dict["is_active"],
+        username=user_dict["username"]
     )
 
 @app.post("/token", response_model=Token)
@@ -303,16 +315,44 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/users/me", response_model=User)
+@app.get("/users/me", response_model=UserWithDoctorProfile)
 async def read_users_me(current_user = Depends(get_current_active_user)):
-    return User(
-        id=current_user["id"],
-        email=current_user["email"],
-        full_name=current_user["full_name"],
-        phone=current_user["phone"],
-        role=current_user["role"],
-        is_active=current_user.get("is_active", True)
-    )
+    response = {
+        "id": current_user["id"],
+        "email": current_user["email"],
+        "full_name": current_user["full_name"],
+        "phone": current_user["phone"],
+        "role": current_user["role"],
+        "is_active": current_user.get("is_active", True),
+        "username": current_user.get("username", current_user["email"]),
+        "doctor_profile": None
+    }
+    
+    # If user is a doctor, include their doctor profile
+    if current_user["role"] == "doctor":
+        doctor = doctors_collection.find_one({"user_id": current_user["id"]})
+        if doctor:
+            # Remove MongoDB _id field
+            if "_id" in doctor:
+                del doctor["_id"]
+            response["doctor_profile"] = doctor
+    
+    return UserWithDoctorProfile(**response)
+
+@app.get("/users", response_model=List[User])
+async def get_all_users(current_user = Depends(check_admin_role)):
+    users = list(users_collection.find())
+    return [
+        User(
+            id=user["id"],
+            email=user["email"],
+            full_name=user["full_name"],
+            phone=user["phone"],
+            role=user["role"],
+            is_active=user.get("is_active", True),
+            username=user.get("username", user["email"])
+        ) for user in users
+    ]
 
 # =============================================
 # DOCTOR ENDPOINTS
@@ -399,6 +439,25 @@ async def update_doctor(
         timings=doctor_dict["timings"]
     )
 
+@app.get("/doctors/me", response_model=Doctor)
+async def get_my_doctor_profile(current_user = Depends(check_doctor_role)):
+    doctor = doctors_collection.find_one({"user_id": current_user["id"]})
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+    
+    return Doctor(
+        id=doctor["id"],
+        name=doctor["name"],
+        experience=doctor["experience"],
+        qualifications=doctor["qualifications"],
+        languages=doctor["languages"],
+        specialties=doctor["specialties"],
+        gender=doctor["gender"],
+        image_url=doctor.get("image_url"),
+        locations=doctor["locations"],
+        timings=doctor["timings"]
+    )
+
 # =============================================
 # HOSPITAL ENDPOINTS
 # =============================================
@@ -451,6 +510,17 @@ async def create_appointment(
     doctor = doctors_collection.find_one({"id": appointment.doctor_id})
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
+    
+    # Check for conflicting appointments
+    existing_appointments = appointments_collection.find_one({
+        "doctor_id": appointment.doctor_id,
+        "date": appointment.date,
+        "time": appointment.time,
+        "status": {"$ne": "cancelled"}  # Exclude cancelled appointments
+    })
+    
+    if existing_appointments:
+        raise HTTPException(status_code=400, detail="Appointment time is already booked for this doctor.")
     
     # Create appointment
     appointment_dict = appointment.dict()
