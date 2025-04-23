@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form, BackgroundTasks, WebSocket
+from fastapi.websockets import WebSocketDisconnect
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,6 +14,9 @@ from dotenv import load_dotenv
 import uuid
 import json
 from bson import ObjectId
+import requests
+from websocket_manager import WebSocketManager
+from middleware import WebSocketAuthMiddleware
 
 # Load environment variables
 load_dotenv()
@@ -707,19 +711,19 @@ async def get_analysis(current_user = Depends(get_current_active_user)):
 @app.post("/api/analysis/lung-disease")
 async def analyze_lung_disease(
     audio_file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
-):
-    # Forward the request to ML service
-    files = {'audio_file': audio_file.file}
-    response = requests.post('http://localhost:8000/predict', files=files)
+    current_user: dict = Depends(get_current_user)
+):    # Forward the request to ML service
+    files = {'audio_file': (audio_file.filename, audio_file.file, 'audio/wav')}
+    response = requests.post('http://localhost:8001/predict', files=files)
     
     if response.status_code == 200:
         result = response.json()
         
         # Store analysis result in database
         analysis_data = {
-            "user_id": current_user.id,
-            "type": "lung_disease",
+            "user_id": current_user["id"],
+            "disease_type": result.get("disease"),
+            "confidence": result.get("confidence"),
             "result": result,
             "timestamp": datetime.utcnow()
         }
@@ -728,6 +732,75 @@ async def analyze_lung_disease(
         return result
     else:
         raise HTTPException(status_code=500, detail="Prediction service error")
+# =============================================
+# WEBSOCKET CHAT ENDPOINTS
+# =============================================
+
+# Initialize WebSocket manager
+ws_manager = WebSocketManager(
+    encryption_key=SECRET_KEY.encode(),
+    mongodb_url=MONGODB_URL
+)
+
+# Initialize WebSocket auth middleware
+ws_auth = WebSocketAuthMiddleware(SECRET_KEY)
+
+@app.websocket("/chat/{doctor_id}/{user_id}")
+async def chat_endpoint(websocket: WebSocket, doctor_id: str, user_id: str):
+    # Verify the WebSocket connection
+    if not await ws_auth.verify_connection(websocket):
+        return
+
+    # Accept the connection and store it
+    await ws_manager.connect(websocket, user_id)
+    
+    try:
+        while True:
+            # Receive message from client
+            data = await websocket.receive_json()
+            
+            # Validate message format
+            if not all(key in data for key in ["text", "sender_id", "receiver_id"]):
+                await websocket.send_json({"error": "Invalid message format"})
+                continue
+            
+            # Create message document
+            message = {
+                "id": str(uuid.uuid4()),
+                "conversation_id": f"{doctor_id}_{user_id}",
+                "text": data["text"],
+                "sender_id": data["sender_id"],
+                "receiver_id": data["receiver_id"],
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            
+            # Store message in database
+            await ws_manager.store_message(message)
+            
+            # Send message to receiver
+            await ws_manager.send_personal_message(message, data["receiver_id"])
+            
+    except WebSocketDisconnect:
+        ws_manager.disconnect(user_id)
+    
+@app.get("/chat/history/{conversation_id}")
+async def get_chat_history(
+    conversation_id: str,
+    limit: int = 50,
+    current_user = Depends(get_current_active_user)
+):
+    # Verify that the user is part of the conversation
+    user_ids = conversation_id.split("_")
+    if current_user["id"] not in user_ids and current_user["role"] != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to view this conversation"
+        )
+    
+    # Load chat history
+    messages = await ws_manager.load_chat_history(conversation_id, limit)
+    return messages
+
 # =============================================
 # ROOT ENDPOINT
 # =============================================

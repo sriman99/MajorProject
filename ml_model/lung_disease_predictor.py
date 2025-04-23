@@ -42,8 +42,9 @@ def extract_features(file_path, max_pad_len=862):
 async def predict_disease(audio_file: UploadFile = File(...)):
     """
     Endpoint to predict respiratory disease from audio file
-    """
-    if not audio_file.filename.endswith('.wav'):
+    """    # Check file extension and mimetype
+    filename = audio_file.filename.lower()
+    if not (filename.endswith('.wav') or filename.endswith('.wave')):
         return {"error": "Please upload a WAV file"}
     
     try:
