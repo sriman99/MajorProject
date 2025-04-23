@@ -1,5 +1,5 @@
 fastapi==0.115.12
-uvicorn[standard]==0.33.0
+uvicorn==0.33.0
 pymongo==4.6.1
 motor==3.3.2
 passlib==1.7.4
@@ -10,15 +10,10 @@ python-dotenv==1.0.1
 pydantic==2.10.6
 email-validator==2.1.0
 dnspython==2.4.2
-tensorflow==2.11.1
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+tensorflow==2.14.0
 librosa==0.10.1
 numpy>=1.22.0
 scikit-learn>=1.0.2
-redis==5.0.1
-aioredis==2.0.1
-cryptography==42.0.5
-prometheus-client==0.19.0
-python-logstash==0.4.8
-sentry-sdk[fastapi]==1.40.6
-gunicorn==21.2.0
-httptools==0.6.3

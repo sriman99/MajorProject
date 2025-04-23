@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form, BackgroundTasks, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form, BackgroundTasks
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -13,9 +13,6 @@ from dotenv import load_dotenv
 import uuid
 import json
 from bson import ObjectId
-import asyncio
-from typing import Dict, Set
-import requests
 
 # Load environment variables
 load_dotenv()
@@ -31,7 +28,6 @@ doctors_collection = db.doctors
 hospitals_collection = db.hospitals
 appointments_collection = db.appointments
 analysis_collection = db.analysis
-chat_messages_collection = db.chat_messages  # New collection for chat messages
 
 # JWT Settings
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
@@ -166,18 +162,6 @@ class AnalysisCreate(AnalysisBase):
 class Analysis(AnalysisBase):
     id: str
     created_at: str
-
-    class Config:
-        from_attributes = True
-
-class ChatMessage(BaseModel):
-    id: str
-    conversation_id: str
-    sender_id: str
-    receiver_id: str
-    text: str
-    timestamp: str
-    read: bool = False
 
     class Config:
         from_attributes = True
@@ -725,202 +709,25 @@ async def analyze_lung_disease(
     audio_file: UploadFile = File(...),
     current_user: User = Depends(get_current_user)
 ):
-    # Validate file type
-    if not audio_file.filename.endswith('.wav'):
-        raise HTTPException(status_code=400, detail="Please upload a WAV file")
-
-    try:
-        # Forward the request to ML service
-        files = {'audio_file': audio_file.file}
-        response = requests.post('http://localhost:8001/predict', files=files, timeout=30)
-        
-        if response.status_code == 200:
-            result = response.json()
-            
-            if "error" in result:
-                raise HTTPException(status_code=400, detail=result["error"])
-
-            # Create analysis entry
-            analysis_dict = {
-                "id": str(uuid.uuid4()),
-                "user_id": current_user.id,
-                "file_path": f"uploads/{current_user.id}_{audio_file.filename}",
-                "analysis_type": "lung_disease",
-                "status": "warning" if result["confidence"] < 0.7 else "normal",
-                "message": f"Detected {result['disease']} with {result['confidence']*100:.1f}% confidence",
-                "details": [
-                    f"Primary diagnosis: {result['disease']}",
-                    f"Confidence: {result['confidence']*100:.1f}%",
-                    "Detailed predictions:",
-                    *[f"- {disease}: {prob*100:.1f}%" for disease, prob in result["predictions"].items()]
-                ],
-                "created_at": datetime.utcnow().isoformat()
-            }
-            
-            # Store the analysis
-            analysis_collection.insert_one(analysis_dict)
-            
-            return Analysis(
-                id=analysis_dict["id"],
-                user_id=analysis_dict["user_id"],
-                file_path=analysis_dict["file_path"],
-                analysis_type=analysis_dict["analysis_type"],
-                status=analysis_dict["status"],
-                message=analysis_dict["message"],
-                details=analysis_dict["details"],
-                created_at=analysis_dict["created_at"]
-            )
-    except requests.ConnectionError:
-        raise HTTPException(
-            status_code=503, 
-            detail="ML service is not available. Please try again later."
-        )
-    except requests.Timeout:
-        raise HTTPException(
-            status_code=504, 
-            detail="ML service took too long to respond. Please try again."
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# =============================================
-# WEBSOCKET CHAT ENDPOINTS
-# =============================================
-
-from websocket_manager import WebSocketManager
-from middleware import WebSocketAuthMiddleware
-import os
-from cryptography.fernet import Fernet
-
-# Generate encryption key if not exists
-ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', Fernet.generate_key())
-MONGODB_URL = os.getenv('MONGODB_URL', 'mongodb://localhost:27017')
-
-# Initialize WebSocket manager and auth middleware
-manager = WebSocketManager(ENCRYPTION_KEY, MONGODB_URL)
-ws_auth = WebSocketAuthMiddleware(SECRET_KEY)
-
-# Create a conversation_id from doctor_id and user_id
-def get_conversation_id(doctor_id: str, user_id: str):
-    # Sort the IDs to ensure the same conversation_id regardless of who initiates
-    sorted_ids = sorted([doctor_id, user_id])
-    return f"{sorted_ids[0]}_{sorted_ids[1]}"
-
-@app.websocket("/chat/{doctor_id}/{user_id}")
-async def websocket_chat_endpoint(websocket: WebSocket, doctor_id: str, user_id: str):
-    try:
-        # Verify authentication token
-        if not await ws_auth.verify_connection(websocket):
-            return
-
-        # Validate doctor exists
-        doctor = await doctors_collection.find_one({"id": doctor_id})
-        if not doctor:
-            await websocket.close(code=4004, reason="Doctor not found")
-            return
-        
-        # Rate limiting check
-        if not await manager._check_rate_limit(user_id):
-            await websocket.close(code=4029, reason="Rate limit exceeded")
-            return
-        
-        # Generate conversation ID
-        conversation_id = get_conversation_id(doctor_id, user_id)
-        
-        # Connect the client with secure handshake
-        if not await manager.connect(websocket, user_id):
-            return
-        
-        # Load and decrypt previous messages
-        previous_messages = await manager.load_chat_history(conversation_id)
-        
-        # Send chat history with proper error handling
-        if previous_messages:
-            for msg in previous_messages:
-                try:
-                    formatted_msg = {
-                        "id": msg["id"],
-                        "text": msg["text"],  # Already decrypted by load_chat_history
-                        "sender_id": msg["sender_id"],
-                        "receiver_id": msg["receiver_id"],
-                        "timestamp": msg["timestamp"],
-                        "sender": "user" if msg["sender_id"] == user_id else "doctor"
-                    }
-                    await websocket.send_json(formatted_msg)
-                except Exception as e:
-                    logger.error(f"Error sending message history: {e}")
-                    continue
-    except Exception as e:
-        logger.error(f"WebSocket connection error: {e}")
-        await websocket.close(code=4000, reason=str(e))
-        return
-    finally:
-        # Ensure the connection is closed on exit
-        await websocket.close()
+    # Forward the request to ML service
+    files = {'audio_file': audio_file.file}
+    response = requests.post('http://localhost:8000/predict', files=files)
     
-    try:
-        while True:
-            # Receive message from WebSocket
-            data = await websocket.receive_json()
-            text = data.get("text", "")
-            
-            if not text.strip():
-                continue
-                
-            # Determine if the sender is the doctor or patient
-            is_from_doctor = data.get("sender_id") == doctor_id
-            sender_id = doctor_id if is_from_doctor else user_id
-            receiver_id = user_id if is_from_doctor else doctor_id
-            
-            # Store the message in the database
-            message_id = str(uuid.uuid4())
-            timestamp = datetime.utcnow().isoformat()
-            
-            message_dict = {
-                "id": message_id,
-                "conversation_id": conversation_id,
-                "sender_id": sender_id,
-                "receiver_id": receiver_id,
-                "text": text,
-                "timestamp": timestamp,
-                "read": False
-            }
-            
-            chat_messages_collection.insert_one(message_dict)
-            
-            # Format response message
-            response_message = {
-                "id": message_id,
-                "text": text,
-                "sender_id": sender_id,
-                "receiver_id": receiver_id,
-                "timestamp": timestamp,
-                "sender": "doctor" if is_from_doctor else "user"
-            }
-            
-            # Send message to sender for confirmation
-            await websocket.send_json(response_message)
-            
-            # Send message to recipient if they are connected
-            if receiver_id in manager.active_connections:
-                # Flip the sender for the recipient's view
-                recipient_message = response_message.copy()
-                recipient_message["sender"] = "user" if is_from_doctor else "doctor"
-                await manager.send_personal_message(recipient_message, receiver_id)
-                
-                # Mark as read
-                chat_messages_collection.update_one(
-                    {"id": message_id},
-                    {"$set": {"read": True}}
-                )
-                
-    except WebSocketDisconnect:
-        manager.disconnect(user_id)
-    except Exception as e:
-        print(f"Error in chat WebSocket: {e}")
-        manager.disconnect(user_id)
-        await websocket.close(code=4000, reason=str(e))
-
+    if response.status_code == 200:
+        result = response.json()
+        
+        # Store analysis result in database
+        analysis_data = {
+            "user_id": current_user.id,
+            "type": "lung_disease",
+            "result": result,
+            "timestamp": datetime.utcnow()
+        }
+        analysis_collection.insert_one(analysis_data)
+        
+        return result
+    else:
+        raise HTTPException(status_code=500, detail="Prediction service error")
 # =============================================
 # ROOT ENDPOINT
 # =============================================
