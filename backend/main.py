@@ -17,6 +17,9 @@ from bson import ObjectId
 import requests
 from websocket_manager import WebSocketManager
 from middleware import WebSocketAuthMiddleware
+from cryptography.fernet import Fernet
+import base64
+import hashlib
 
 # Load environment variables
 load_dotenv()
@@ -736,9 +739,17 @@ async def analyze_lung_disease(
 # WEBSOCKET CHAT ENDPOINTS
 # =============================================
 
-# Initialize WebSocket manager
+# Generate Fernet key from SECRET_KEY
+def generate_fernet_key(secret_key: str) -> bytes:
+    # Convert the secret key to bytes and hash it using SHA-256
+    hashed = hashlib.sha256(secret_key.encode()).digest()
+    # Convert to URL-safe base64 encoding
+    return base64.urlsafe_b64encode(hashed)
+
+# Initialize WebSocket manager with proper Fernet key
+fernet_key = generate_fernet_key(SECRET_KEY)
 ws_manager = WebSocketManager(
-    encryption_key=SECRET_KEY.encode(),
+    encryption_key=fernet_key,
     mongodb_url=MONGODB_URL
 )
 
