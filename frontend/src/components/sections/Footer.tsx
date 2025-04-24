@@ -38,7 +38,7 @@ export function Footer() {
               NeumoAI
             </span> */}
             <Link to="/">
-              <img src="logo.png" alt="" className="w-30 h-17" />
+              <img src="/logo.png" alt="" className="w-30 h-17" />
             </Link>
           </div>
 

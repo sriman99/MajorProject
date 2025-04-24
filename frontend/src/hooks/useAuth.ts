@@ -1,43 +1,75 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { create } from 'zustand'
+import axios from 'axios'
+import { useEffect } from 'react'
 
 interface AuthState {
+  user: any
   isLoggedIn: boolean
-  token: string | null
+  loading: boolean
+  error: string | null
+  login: (token: string) => Promise<void>
+  logout: () => void
+  fetchUser: () => Promise<void>
 }
 
-export function useAuth() {
-  const queryClient = useQueryClient()
+export const useAuth = create<AuthState>((set) => ({
+  user: null,
+  isLoggedIn: !!localStorage.getItem('access_token'),
+  loading: true, // Start with loading true
+  error: null,
 
-  const { data: auth } = useQuery<AuthState>({
-    queryKey: ['auth'],
-    queryFn: () => ({
-      isLoggedIn: !!localStorage.getItem('access_token'),
-      token: localStorage.getItem('access_token')
-    }),
-    staleTime: Infinity
-  })
+  login: async (token: string) => {
+    try {
+      set({ loading: true, error: null })
+      localStorage.setItem('access_token', token)
+      set({ isLoggedIn: true })
+      // Fetch user data after login
+      await useAuth.getState().fetchUser()
+    } catch (error) {
+      set({ error: 'Login failed', loading: false })
+      throw error
+    }
+  },
 
-  const login = (token: string) => {
-    localStorage.setItem('access_token', token)
-    queryClient.setQueryData(['auth'], {
-      isLoggedIn: true,
-      token
-    })
-  }
-
-  const logout = () => {
+  logout: () => {
     localStorage.removeItem('access_token')
-    localStorage.removeItem('token_type')
-    queryClient.setQueryData(['auth'], {
-      isLoggedIn: false,
-      token: null
-    })
-  }
+    set({ user: null, isLoggedIn: false, error: null })
+  },
 
-  return {
-    isLoggedIn: auth?.isLoggedIn ?? false,
-    token: auth?.token ?? null,
-    login,
-    logout
+  fetchUser: async () => {
+    try {
+      set({ loading: true, error: null })
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        set({ isLoggedIn: false, loading: false })
+        return
+      }
+
+      const response = await axios.get('http://localhost:8000/users/me', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      set({ user: response.data, loading: false })
+    } catch (error) {
+      console.error('Error fetching user:', error)
+      set({ error: 'Failed to fetch user data', loading: false })
+      useAuth.getState().logout()
+    }
   }
-} 
+}))
+
+// Custom hook to handle initial data fetching
+export const useAuthWithFetch = () => {
+  const { fetchUser, isLoggedIn, loading, ...rest } = useAuth()
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchUser()
+    } else {
+      useAuth.setState({ loading: false })
+    }
+  }, [isLoggedIn, fetchUser])
+
+  return { ...rest, isLoggedIn, loading }
+}

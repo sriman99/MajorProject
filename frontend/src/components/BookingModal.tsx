@@ -1,203 +1,167 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { X } from "lucide-react"
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import axios from "axios"
+import { toast } from "sonner"
+import { useAuth } from "@/hooks/useAuth"
 
 interface BookingModalProps {
   isOpen: boolean
   onClose: () => void
-  doctor: {
-    id: string
-    name: string
-    timings: {
-      hours: string
-      days: string
-    }
-  }
+  doctorId: string
+  doctorName: string
+  patientId: string
 }
 
-export function BookingModal({ isOpen, onClose, doctor }: BookingModalProps) {
-  const [formData, setFormData] = useState({
-    patientName: "",
-    age: "",
-    phone: "",
-    email: "",
-    date: "",
-    time: "",
-    symptoms: ""
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSuccess, setIsSuccess] = useState(false)
+export function BookingModal({ isOpen, onClose, doctorId, doctorName, patientId }: BookingModalProps) {
+  const [date, setDate] = useState("")
+  const [time, setTime] = useState("")
+  const [reason, setReason] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const { isLoggedIn } = useAuth()
 
-  if (!isOpen) return null
+  console.log("BookingModal props:", { doctorId, doctorName, patientId });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
+    
+    const token = localStorage.getItem('access_token')
+    console.log("Token present:", !!token);
+    console.log("Submitting appointment with:", { doctorId, patientId, date, time, reason });
+    
+    // Validate all required fields
+    const validationErrors = [];
+    if (!date) validationErrors.push("Date is required");
+    if (!time) validationErrors.push("Time is required");
+    if (!reason) validationErrors.push("Reason is required");
+    if (!doctorId) validationErrors.push("Doctor information is missing");
+    if (!patientId) validationErrors.push("Patient information is missing");
+    if (!token) validationErrors.push("Authentication token is missing");
+    
+    if (validationErrors.length > 0) {
+      toast.error(validationErrors.join(", "));
+      console.error("Validation errors:", validationErrors);
+      return;
+    }
+
+    if (!isLoggedIn) {
+      toast.error("Please log in to book an appointment")
+      return
+    }
 
     try {
-      // In a real app, you would make an API call here
-      await new Promise(resolve => setTimeout(resolve, 1500)) // Simulating API call
-      setIsSuccess(true)
+      setIsLoading(true)
+      const token = localStorage.getItem('access_token')
       
-      // Reset form after 2 seconds and close modal
-      setTimeout(() => {
-        setIsSuccess(false)
-        setFormData({
-          patientName: "",
-          age: "",
-          phone: "",
-          email: "",
-          date: "",
-          time: "",
-          symptoms: ""
-        })
+      // Create appointment data exactly matching the Pydantic model
+      const appointmentData = {
+        doctor_id: doctorId,
+        patient_id: patientId,
+        date: date,
+        time: time,
+        reason: reason,
+        status: "pending"
+      }
+      
+      console.log('Sending appointment data:', appointmentData)
+      console.log('Using token:', token ? 'Token present' : 'No token')
+      
+      const response = await axios.post("http://localhost:8000/appointments", appointmentData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      console.log('Response received:', response.data)
+
+      if (response.status === 200) {
+        toast.success("Appointment booked successfully!")
         onClose()
-      }, 2000)
+        // Reset form
+        setDate("")
+        setTime("")
+        setReason("")
+      }
     } catch (error) {
-      console.error('Booking failed:', error)
+      console.error("Error booking appointment:", error)
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          toast.error("Please log in to book an appointment")
+        } else if (error.response?.status === 422) {
+          console.error("Validation error details:", error.response.data)
+          toast.error("Invalid appointment data. Please check your input.")
+        } else if (error.response?.status === 400) {
+          toast.error(error.response.data.detail || "Failed to book appointment")
+        } else {
+          toast.error("Failed to book appointment. Please try again.")
+        }
+      } else {
+        toast.error("Failed to book appointment. Please try again.")
+      }
     } finally {
-      setIsSubmitting(false)
+      setIsLoading(false)
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }))
-  }
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-full max-w-2xl mx-4 relative">
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
-        >
-          <X className="w-6 h-6" />
-        </button>
-
-        <div className="p-6">
-          <h2 className="text-2xl font-bold text-[#1a2352] mb-2">Book Appointment</h2>
-          <p className="text-gray-600 mb-6">with {doctor.name}</p>
-
-          {isSuccess ? (
-            <div className="text-center py-8">
-              <div className="text-green-600 text-xl font-semibold mb-2">
-                Appointment Booked Successfully!
-              </div>
-              <p className="text-gray-600">
-                We'll send you a confirmation email with all the details.
-              </p>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Book Appointment with {doctorName}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="date" className="text-sm font-medium">
+                Date
+              </label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+                min={new Date().toISOString().split('T')[0]}
+              />
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="patientName">Patient Name</Label>
-                  <Input
-                    id="patientName"
-                    name="patientName"
-                    value={formData.patientName}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    name="age"
-                    type="number"
-                    value={formData.age}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="date">Preferred Date</Label>
-                  <Input
-                    id="date"
-                    name="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="time">Preferred Time</Label>
-                  <Input
-                    id="time"
-                    name="time"
-                    type="time"
-                    value={formData.time}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="symptoms">Symptoms (Optional)</Label>
-                <Textarea
-                  id="symptoms"
-                  name="symptoms"
-                  value={formData.symptoms}
-                  onChange={handleChange}
-                  placeholder="Please describe your symptoms or reason for visit"
-                  className="h-24"
-                />
-              </div>
-
-              <div className="border-t border-gray-100 pt-4">
-                <div className="text-sm text-gray-600 mb-4">
-                  <p>Available Hours: {doctor.timings.hours}</p>
-                  <p>Available Days: {doctor.timings.days}</p>
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-[#1a2352] hover:bg-[#1a2352]/90 text-white py-6 rounded-full font-semibold"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Booking..." : "Confirm Booking"}
-                </Button>
-              </div>
-            </form>
-          )}
-        </div>
-      </div>
-    </div>
+            <div className="grid gap-2">
+              <label htmlFor="time" className="text-sm font-medium">
+                Time
+              </label>
+              <Input
+                id="time"
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="reason" className="text-sm font-medium">
+                Reason for Visit
+              </label>
+              <Textarea
+                id="reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Describe your symptoms or reason for visit..."
+                required
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Booking..." : "Book Appointment"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 } 

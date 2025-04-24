@@ -7,7 +7,7 @@ import { toast } from "react-hot-toast"
 
 export function Navigation() {
   const navigate = useNavigate()
-  const { isLoggedIn, logout } = useAuth()
+  const { isLoggedIn, logout, user } = useAuth()
 
   const handleLogout = () => {
     logout()
@@ -15,14 +15,30 @@ export function Navigation() {
     toast.success('Logged out successfully')
   }
 
+  const handleProfile = () => {
+    if (!user) return
+
+    switch (user.role) {
+      case 'doctor':
+        navigate('/doctor/dashboard')
+        break
+      case 'admin':
+        navigate('/admin/dashboard')
+        break
+      case 'user':
+      default:
+        navigate('/patient/dashboard')
+        break
+    }
+  }
+
   return (
-    // <nav className="container mx-auto px-2 py-3 flex items-center justify-between sticky top-0 bg-white/50 backdrop-blur-sm z-50 border-b border-gray-100/50">
     <nav className="container mx-auto px-5 py-2 flex items-center justify-between border-b border-gray-100/50">
       <div className="flex items-center">
         {/* <span  className="text-2xl font-bold ml-2 text-[#1a2352] font-display bg-gradient-to-r from-[#1a2352] to-[#ff7757] bg-clip-text text-transparent cursor-pointer"><Link to={"/"}>NeumoAI</Link></span>
          */}
          <Link to={"/"}>
-         <img src="./logo.png" alt="NeumoAI Logo" className="w-25 h-15" />
+         <img src="/logo.png" alt="NeumoAI Logo" className="w-25 h-15" />
          </Link>
       </div>
       <div className="hidden md:flex items-center space-x-8">
@@ -53,12 +69,10 @@ export function Navigation() {
               <Button
                 variant="ghost"
                 className="text-[#1a2352] hover:text-[#ff7757] transition-colors"
-                asChild
+                onClick={handleProfile}
               >
-                <Link to="/profile">
-                  <UserCircle className="w-5 h-5 mr-2" />
-                  Profile
-                </Link>
+                <UserCircle className="w-5 h-5 mr-2" />
+                Profile
               </Button>
               <Button
                 variant="outline"
@@ -84,4 +98,4 @@ export function Navigation() {
       <MobileMenu />
     </nav>
   )
-} 
+}

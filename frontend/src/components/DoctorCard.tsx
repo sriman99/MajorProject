@@ -1,138 +1,194 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Phone, Video, MessageCircle } from "lucide-react"
-import { useState } from "react"
+import { MapPin, Clock, MessageSquare, Video, Calendar, Languages } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { CallModal } from "./CallModal"
 import { CommunicationModal } from "./CommunicationModal"
 import { BookingModal } from "./BookingModal"
-import { CallModal } from "./CallModal"
+import { useAuthWithFetch} from "@/hooks/useAuth"
 
 interface DoctorCardProps {
-  id: string
+  _id?: string
+  id?: string
   name: string
   experience: string
   qualifications: string
   languages: string[]
+  specialties: string[]
+  gender: "male" | "female"
+  image_url: string
   locations: {
     name: string
-    isMain: boolean
+    isMain?: boolean
   }[]
   timings: {
     hours: string
     days: string
   }
-  imageUrl: string
-  gender: "male" | "female"
-  specialties: string[]
 }
 
 export function DoctorCard({
+  _id,
   id,
   name,
   experience,
   qualifications,
   languages,
-  locations,
-  timings,
-  imageUrl,
+  specialties,
   gender,
-  specialties
+  image_url,
+  locations,
+  timings
 }: DoctorCardProps) {
-  const [showCommunication, setShowCommunication] = useState(false)
-  const [showBooking, setShowBooking] = useState(false)
-  const [showCall, setShowCall] = useState(false)
-  const [callType, setCallType] = useState<"audio" | "video">("audio")
+  const navigate = useNavigate()
+  const { user, isLoggedIn } = useAuthWithFetch()
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false)
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false)
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
+  const [callType, setCallType] = useState<"audio" | "video">("video")
+  
+  // Use id or _id, whichever is available
+  const doctorId = id || _id || ""
+  
+  // Debug user object - will show in console
+  useEffect(() => {
+    console.log("User in DoctorCard:", user);
+    if (user) {
+      console.log("User ID field:", user.id);
+      console.log("Full user object keys:", Object.keys(user));
+    }
+  }, [user]);
+  
+  // Extract user ID safely - trying multiple possible fields
+  const userId = user ? (user.id || "") : "";
 
-  const handleCall = (type: "audio" | "video") => {
-    setCallType(type)
-    setShowCall(true)
+  const handleStartChat = () => {
+    setIsChatModalOpen(true)
+  }
+
+  const handleStartVideoCall = () => {
+    setCallType("video")
+    setIsCallModalOpen(true)
+  }
+
+  const handleStartAudioCall = () => {
+    setCallType("audio")
+    setIsCallModalOpen(true)
+  }
+
+  const handleBookAppointment = () => {
+    setIsBookingModalOpen(true)
   }
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-100 p-6 flex gap-8">
-        {/* Left Section - Image */}
-        <div className="w-50 h-55 flex-shrink-0">
-          <img
-            src={imageUrl}
-            alt={name}
-            className="w-full h-full object-cover rounded-lg"
-          />
-        </div>
-        
-        {/* Middle Section - Doctor Info */}
-        <div className="flex-1">
-          <div className="mb-4">
-            <h2 className="text-2xl font-bold text-[#1a2352]">{name}</h2>
-            <p className="text-[#008080] font-medium">{experience}</p>
+      <Card className="hover:shadow-lg transition-all duration-300">
+        <CardHeader className="flex flex-row items-start gap-4">
+          <Avatar className="h-20 w-20">
+            <AvatarImage src={image_url} alt={name} />
+            <AvatarFallback>{name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <CardTitle className="text-2xl">{name}</CardTitle>
+            <p className="text-sm text-gray-500 mt-1">{experience}</p>
+            <p className="text-sm text-gray-500">{qualifications}</p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {specialties.map((specialty) => (
+                <Badge key={specialty} variant="secondary">
+                  {specialty}
+                </Badge>
+              ))}
+            </div>
           </div>
-          
-          <div className="mb-4">
-            <p className="text-gray-700 font-medium">{qualifications}</p>
-            <p className="text-gray-600">{languages.join(" | ")}</p>
-          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Languages */}
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Languages className="h-4 w-4" />
+              <span>{languages.join(', ')}</span>
+            </div>
 
-          <div className="space-y-2">
-            {locations.map((location, index) => (
-              <div key={index} className="text-gray-800">
-                {location.name}
+            {/* Locations */}
+            {locations.length > 0 && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <MapPin className="h-4 w-4" />
+                <span>{locations[0].name}</span>
               </div>
-            ))}
+            )}
+
+            {/* Timings */}
+            {timings.hours && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Clock className="h-4 w-4" />
+                <span>{timings.hours} ({timings.days})</span>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1"
+                onClick={handleStartChat}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Chat
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1"
+                onClick={handleStartVideoCall}
+              >
+                <Video className="h-4 w-4 mr-2" />
+                Video Call
+              </Button>
+              <Button 
+                size="sm" 
+                className="flex-1" 
+                onClick={handleBookAppointment}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Book
+              </Button>
+            </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="mt-4">
-            <Button 
-              variant="outline" 
-              className="flex-1 mr-2 border-2 border-[#1a2352] text-[#1a2352] hover:bg-[#1a2352]/10 rounded-full"
-              onClick={() => handleCall("video")}
-            >
-              <Video className="w-4 h-4 mr-2" />
-              Video Call
-            </Button>
-            <Button 
-              variant="outline" 
-              className="flex-1 border-2 border-[#1a2352] text-[#1a2352] hover:bg-[#1a2352]/10 rounded-full"
-              onClick={() => setShowCommunication(true)}
-            >
-              <MessageCircle className="w-4 h-4 mr-2" />
-              Chat
-            </Button>
-          </div>
-        </div>
-
-        {/* Right Section - Timing and Book */}
-        <div className="flex flex-col items-end justify-between">
-          <div className="text-right">
-            <p className="text-xl font-bold text-[#1a2352]">{timings.hours}</p>
-            <p className="text-gray-600">{timings.days}</p>
-          </div>
-
-          <Button 
-            className="bg-[#1a2352] hover:bg-[#1a2352]/90 text-white px-8 py-6 rounded-full font-semibold"
-            onClick={() => setShowBooking(true)}
-          >
-            BOOK APPOINTMENT →
-          </Button>
-        </div>
-      </div>
-
-      <CommunicationModal
-        isOpen={showCommunication}
-        onClose={() => setShowCommunication(false)}
-        doctor={{ id, name, imageUrl }}
-        userId="user123"
-      />
-
-      <BookingModal
-        isOpen={showBooking}
-        onClose={() => setShowBooking(false)}
-        doctor={{ id, name, timings }}
-      />
-
+      {/* Call Modal */}
       <CallModal
-        isOpen={showCall}
-        onClose={() => setShowCall(false)}
+        isOpen={isCallModalOpen}
+        onClose={() => setIsCallModalOpen(false)}
         doctorName={name}
-        doctorId={id}
+        doctorId={doctorId}
         callType={callType}
+      />
+
+      {/* Chat Modal */}
+      <CommunicationModal
+        isOpen={isChatModalOpen}
+        onClose={() => setIsChatModalOpen(false)}
+        doctor={{
+          id: doctorId,
+          name: name,
+          imageUrl: image_url
+        }}
+        userId={userId}
+      />
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        doctorId={doctorId}
+        doctorName={name}
+        patientId={userId}
       />
     </>
   )

@@ -1,8 +1,28 @@
 import { DoctorCard } from "../components/DoctorCard"
 import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
-import { Search } from "lucide-react"
+import { Search, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
+import axios from "axios"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useAuthWithFetch } from "@/hooks/useAuth"
+interface Doctor {
+  _id: string
+  name: string
+  experience: string
+  qualifications: string
+  languages: string[]
+  specialties: string[]
+  gender: string
+  image_url: string
+  user_id: string
+  id: string
+  locations: any[]
+  timings: {
+    hours: string
+    days: string
+  }
+}
 
 const SPECIALTIES = [
   "Cardiology",
@@ -15,105 +35,47 @@ const SPECIALTIES = [
   "General Medicine",
   "Nephrology",
   "Respiratory Medicine",
-  "Pulmonology"
-]
-
-const DOCTORS = [
-  {
-    id: "doc_1",
-    name: "Dr A Anitha",
-    experience: "16+ Years Experience",
-    qualifications: "MBBS, DNB (General Medicine), DNB (Nephrology) | Nephrology",
-    languages: ["English", "Hindi", "Telugu", "Tamil", "Kannada", "Malayalam"],
-    locations: [
-      {
-        name: "Apollo Speciality Hospital, Jayanagar",
-        isMain: true
-      }
-    ],
-    timings: {
-      hours: "14:00 -16:00",
-      days: "Mon - Sat"
-    },
-    imageUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=400&h=400&fit=crop",
-    gender: "female",
-    specialties: ["Nephrology", "General Medicine"]
-  },
-  {
-    id: "doc_2",
-    name: "Dr A D Suri",
-    experience: "17+ Years Experience",
-    qualifications: "MBBS, MD - General Medicine | Respiratory Medicine",
-    languages: ["English", "Hindi", "Punjabi"],
-    locations: [
-      {
-        name: "Apollo Hospitals, Bannerghatta Road",
-        isMain: true
-      }
-    ],
-    timings: {
-      hours: "10:00 -13:00",
-      days: "Mon - Fri"
-    },
-    imageUrl: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=400&h=400&fit=crop",
-    gender: "male",
-    specialties: ["Respiratory Medicine", "General Medicine"]
-  },
-  {
-    id: "doc_3",
-    name: "Dr Sarah Johnson",
-    experience: "12+ Years Experience",
-    qualifications: "MBBS, MD - Pulmonology | Respiratory Care",
-    languages: ["English", "Spanish"],
-    locations: [
-      {
-        name: "Apollo Hospitals, Koramangala",
-        isMain: true
-      }
-    ],
-    timings: {
-      hours: "15:00 -19:00",
-      days: "Mon - Sat"
-    },
-    imageUrl: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?q=80&w=400&h=400&fit=crop",
-    gender: "female",
-    specialties: ["Pulmonology", "Respiratory Medicine"]
-  },
-  {
-    id: "doc_4",
-    name: "Dr Michael Chen",
-    experience: "20+ Years Experience",
-    qualifications: "MBBS, MD - Internal Medicine, DM - Pulmonology",
-    languages: ["English", "Mandarin", "Cantonese"],
-    locations: [
-      {
-        name: "Apollo Hospitals, Indira Nagar",
-        isMain: true
-      }
-    ],
-    timings: {
-      hours: "09:00 -14:00",
-      days: "Mon - Sat"
-    },
-    imageUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?q=80&w=400&h=400&fit=crop",
-    gender: "male",
-    specialties: ["Pulmonology", "Internal Medicine"]
-  }
+  "Pulmonology",
+  "Gynacologist"
 ]
 
 export default function Appointments() {
   // State for filters
+  const { user} = useAuthWithFetch()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedGender, setSelectedGender] = useState("any")
   const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([])
   const [specialtySearch, setSpecialtySearch] = useState("")
   const [citySearch, setCitySearch] = useState("")
   const [sortBy, setSortBy] = useState<"experience" | "name">("name")
-  const [filteredDoctors, setFilteredDoctors] = useState(DOCTORS)
+  const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch doctors from API
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await axios.get('http://localhost:8000/doctors')
+        setDoctors(response.data)
+        setFilteredDoctors(response.data)
+      } catch (err) {
+        console.error('Error fetching doctors:', err)
+        setError('Failed to fetch doctors. Please try again later.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDoctors()
+  }, [])
 
   // Filter doctors based on all criteria
   useEffect(() => {
-    let filtered = [...DOCTORS]
+    let filtered = [...doctors]
 
     // Search filter
     if (searchQuery) {
@@ -155,12 +117,63 @@ export default function Appointments() {
     })
 
     setFilteredDoctors(filtered)
-  }, [searchQuery, selectedGender, selectedSpecialties, citySearch, sortBy])
+  }, [searchQuery, selectedGender, selectedSpecialties, citySearch, sortBy, doctors])
 
   // Filter visible specialties based on search
   const filteredSpecialties = SPECIALTIES.filter(specialty =>
     specialty.toLowerCase().includes(specialtySearch.toLowerCase())
   )
+
+  // Handle specialty search
+  const handleSpecialtySearch = async (specialty: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+      const response = await axios.get(`http://localhost:8000/doctors?specialty=${specialty}`)
+      setDoctors(response.data)
+      setFilteredDoctors(response.data)
+    } catch (err) {
+      console.error('Error searching doctors by specialty:', err)
+      setError('Failed to search doctors. Please try again later.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc]">
+        <div className="container mx-auto px-4 py-12">
+          <div className="mb-8">
+            <Skeleton className="h-10 w-96 mb-2" />
+            <Skeleton className="h-6 w-72" />
+          </div>
+          <div className="flex gap-8">
+            <div className="w-72">
+              <Skeleton className="h-[600px] rounded-lg" />
+            </div>
+            <div className="flex-1 space-y-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-48 rounded-lg" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -233,6 +246,7 @@ export default function Appointments() {
                         onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedSpecialties([...selectedSpecialties, specialty])
+                            handleSpecialtySearch(specialty)
                           } else {
                             setSelectedSpecialties(selectedSpecialties.filter(s => s !== specialty))
                           }
@@ -272,9 +286,9 @@ export default function Appointments() {
             </div>
 
             <div className="space-y-4">
-              {filteredDoctors.map((doctor, index) => (
+              {filteredDoctors.map((doctor) => (
                 <DoctorCard 
-                  key={index} 
+                  key={doctor.id} 
                   {...doctor}
                   gender={doctor.gender as "male" | "female"} 
                 />

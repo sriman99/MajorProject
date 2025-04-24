@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
+import { useAuthWithFetch } from "@/hooks/useAuth"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Mock data
 const stats = [
@@ -23,12 +25,91 @@ const systemAlerts = [
 ]
 
 export default function AdminDashboard() {
+  const { user, loading, error } = useAuthWithFetch()
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <Skeleton className="h-10 w-[300px]" />
+            <Skeleton className="h-10 w-[150px]" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Skeleton className="h-[200px]" />
+            <Skeleton className="h-[200px]" />
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-[50vh]">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
+            <p className="text-gray-600">{error}</p>
+            <Button className="mt-4" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!user) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-[50vh]">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">Not Logged In</h2>
+            <p className="text-gray-600">Please log in to view your dashboard</p>
+            <Button className="mt-4" onClick={() => window.location.href = '/login'}>
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Welcome, {user.full_name || 'Admin'}</h1>
+            <p className="text-muted-foreground">Administrator Dashboard</p>
+          </div>
           <Button>System Settings</Button>
+        </div>
+
+        {/* Admin Info Section */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Email:</span> {user.email || 'Not specified'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Role:</span> {user.role || 'Not specified'}
+                </p>
+                <div className="flex items-center space-x-2">
+                  <span className={`h-2 w-2 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
+                  <span className="text-sm text-gray-600">
+                    {user.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Stats Overview */}
