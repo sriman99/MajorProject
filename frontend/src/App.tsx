@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
-import { Toaster } from 'react-hot-toast'
+import { Toaster as HotToaster } from 'react-hot-toast'
+import { ToastProvider, Toaster } from './components/ui/use-toast'
 import { Home } from './pages/Home'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
@@ -59,11 +60,14 @@ function AppLayout() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Toaster position="top-right" />
-      <Router>
-        <AppLayout />
-      </Router>
-      <ReactQueryDevtools initialIsOpen={false} />
+      <ToastProvider>
+        <HotToaster position="top-right" />
+        <Toaster />
+        <Router>
+          <AppLayout />
+        </Router>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </ToastProvider>
     </QueryClientProvider>
   )
 }

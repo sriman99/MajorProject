@@ -30,11 +30,7 @@ export function Mission() {
               <span className="font-semibold text-[#1a2352]">human</span>.
             </p>
             <div className="flex space-x-4">
-              <Link to="/signup">
-                <Button className="text-white bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90 shadow-lg hover:shadow-xl transition-all">
-                  Sign Up
-                </Button>
-              </Link>
+              
               <Link to="/how-it-works">
                 <Button variant="outline" className="border-[#ff7757] text-[#ff7757] hover:bg-[#ff7757]/10">
                   Learn More
