@@ -2,11 +2,11 @@ import { Sheet, SheetContent, SheetTrigger } from "./sheet"
 import { Button } from "./button"
 import { Menu } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
-import { UserCircle, LogOut } from "lucide-react"
+import { UserCircle, LogOut, Stethoscope } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "react-hot-toast"
 
-export function MobileMenu() {
+export function MobileMenu({ isDoctor = false }) {
   const navigate = useNavigate()
   const { isLoggedIn, logout } = useAuth()
 
@@ -28,15 +28,27 @@ export function MobileMenu() {
           <Link to="/" className="block px-2 py-1 text-lg">
             Home
           </Link>
-          <Link to="/features" className="block px-2 py-1 text-lg">
-            Features
-          </Link>
-          <Link to="/testimonials" className="block px-2 py-1 text-lg">
-            Testimonials
-          </Link>
-          <Link to="/how-it-works" className="block px-2 py-1 text-lg">
-            How it works
-          </Link>
+          
+          {isDoctor ? (
+            <>
+              <Link to="/doctor/dashboard" className="block px-2 py-1 text-lg">
+                Dashboard
+              </Link>
+              <Link to="/appointments/manage" className="block px-2 py-1 text-lg">
+                Appointments
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/features" className="block px-2 py-1 text-lg">
+                Features
+              </Link>
+              <Link to="/how-it-works" className="block px-2 py-1 text-lg">
+                How it works
+              </Link>
+            </>
+          )}
+          
           <Link to="/contact" className="block px-2 py-1 text-lg">
             Contact
           </Link>
@@ -48,9 +60,9 @@ export function MobileMenu() {
                 className="text-[#1a2352] hover:text-[#ff7757] transition-colors justify-start"
                 asChild
               >
-                <Link to="/profile">
-                  <UserCircle className="w-5 h-5 mr-2" />
-                  Profile
+                <Link to={isDoctor ? "/doctor/dashboard" : "/profile"}>
+                  {isDoctor ? <Stethoscope className="w-5 h-5 mr-2" /> : <UserCircle className="w-5 h-5 mr-2" />}
+                  {isDoctor ? "Doctor Profile" : "Profile"}
                 </Link>
               </Button>
               <Button

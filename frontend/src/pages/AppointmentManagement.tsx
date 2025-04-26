@@ -30,6 +30,7 @@ export default function AppointmentManagement() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("all")
+  const [doctorInfo, setDoctorInfo] = useState<any>(null)
 
   const fetchAppointments = async () => {
     try {
@@ -41,7 +42,26 @@ export default function AppointmentManagement() {
         setError("Authentication token missing. Please log in again.")
         return
       }
+
+      // If user has doctor_profile, we need to update the UI with that information
+      if (user?.doctor_profile) {
+        setDoctorInfo(user.doctor_profile)
+      } else if (user?.role === 'doctor') {
+        // If user is a doctor but doctor_profile isn't loaded, fetch it
+        try {
+          const doctorResponse = await axios.get('http://localhost:8000/doctors/me', {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          setDoctorInfo(doctorResponse.data);
+        } catch (doctorErr) {
+          console.error('Error fetching doctor profile:', doctorErr);
+          // This isn't critical, so we'll continue
+        }
+      }
       
+      // Fetch appointments
       const response = await axios.get('http://localhost:8000/appointments', {
         headers: {
           Authorization: `Bearer ${token}`
@@ -49,9 +69,25 @@ export default function AppointmentManagement() {
       })
       
       setAppointments(response.data)
-    } catch (err) {
+      toast.success(`Loaded ${response.data.length} appointments successfully`)
+    } catch (err: any) {
       console.error('Error fetching appointments:', err)
-      setError('Failed to load appointments. Please try again.')
+      
+      // More detailed error messages
+      if (err.response) {
+        if (err.response.status === 404) {
+          setError('Appointment service endpoint not found. The server may be down or the API path may have changed.')
+        } else if (err.response.status === 401) {
+          setError('Authentication error. Please log in again.')
+        } else {
+          setError(`Server error: ${err.response.data?.message || err.response.statusText || 'Unknown error'}`)
+        }
+      } else if (err.request) {
+        setError('No response from server. Please check your connection and try again.')
+      } else {
+        setError('Failed to load appointments. Please try again.')
+      }
+      
       toast.error('Failed to load appointments')
     } finally {
       setLoading(false)
@@ -61,6 +97,40 @@ export default function AppointmentManagement() {
   useEffect(() => {
     fetchAppointments()
   }, [])
+
+  // Debug logging to help diagnose issues
+  useEffect(() => {
+    console.log('Current user:', user);
+    console.log('Doctor info:', doctorInfo);
+    console.log('Appointments:', appointments);
+  }, [user, doctorInfo, appointments]);
+
+  // Handle possible message-related errors
+  useEffect(() => {
+    const handlePossibleMessageErrors = () => {
+      const messagesErrorPattern = /Error fetching messages/;
+      
+      // Clean up any previous error event listeners first
+      window.removeEventListener('error', () => {});
+      
+      // Listen for unhandled errors that might be related to messages
+      const errorHandler = (event: ErrorEvent) => {
+        if (messagesErrorPattern.test(event.message || '')) {
+          console.log('Intercepted messages error - this will not affect appointments functionality');
+          // Prevent the error from bubbling up
+          event.preventDefault();
+        }
+      };
+      
+      window.addEventListener('error', errorHandler);
+      
+      return () => {
+        window.removeEventListener('error', errorHandler);
+      };
+    };
+    
+    handlePossibleMessageErrors();
+  }, []);
 
   const filteredAppointments = () => {
     if (activeTab === "all") return appointments
@@ -116,9 +186,16 @@ export default function AppointmentManagement() {
       <div className="space-y-6">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Appointment Management</h2>
-          <p className="text-muted-foreground">
-            View and manage your appointments
-          </p>
+          {user?.role === 'doctor' && doctorInfo && (
+            <p className="text-muted-foreground">
+              Dr. {doctorInfo?.name || user?.full_name} - View and manage your appointments
+            </p>
+          )}
+          {user?.role !== 'doctor' && (
+            <p className="text-muted-foreground">
+              View and manage your appointments
+            </p>
+          )}
         </div>
 
         <Tabs 
@@ -138,12 +215,15 @@ export default function AppointmentManagement() {
           <TabsContent value={activeTab} className="space-y-4">
             {filteredAppointments().length > 0 ? (
               filteredAppointments().map((appointment) => (
-                <Card key={appointment.id} className="overflow-hidden">
+                <Card key={appointment.id} className="overflow-hidden hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-xl">
-                          Appointment with {appointment.doctor?.name || `Doctor (ID: ${appointment.doctor_id})`}
+                          {user?.role === 'doctor' 
+                            ? `Appointment with Patient (ID: ${appointment.patient_id})`
+                            : `Appointment with ${appointment.doctor?.name || `Doctor (ID: ${appointment.doctor_id})`}`
+                          }
                         </CardTitle>
                         <CardDescription>
                           Appointment ID: {appointment.id}
@@ -173,8 +253,7 @@ export default function AppointmentManagement() {
                           <UserCircle className="h-5 w-5 mr-2 text-muted-foreground" />
                           <span className="text-sm">
                             {user?.role === 'doctor' ? 'Patient ID: ' + appointment.patient_id : ''}
-                            {user?.role === 'user' ? 'Doctor ID: ' + appointment.doctor_id : ''}
-                            {!user ? 'Unknown' : ''}
+                            {user?.role !== 'doctor' ? 'Doctor ID: ' + appointment.doctor_id : ''}
                           </span>
                         </div>
                       </div>

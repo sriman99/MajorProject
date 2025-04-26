@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import axios from 'axios'
 import { useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface AuthState {
   user: any
@@ -12,10 +13,21 @@ interface AuthState {
   fetchUser: () => Promise<void>
 }
 
+// Get stored user from local storage
+const getStoredUser = () => {
+  try {
+    const storedUser = localStorage.getItem('user')
+    return storedUser ? JSON.parse(storedUser) : null
+  } catch (error) {
+    console.error('Failed to parse stored user:', error)
+    return null
+  }
+}
+
 export const useAuth = create<AuthState>((set) => ({
-  user: null,
+  user: getStoredUser(),
   isLoggedIn: !!localStorage.getItem('access_token'),
-  loading: true, // Start with loading true
+  loading: !!localStorage.getItem('access_token'), // Only start loading if there's a token
   error: null,
 
   login: async (token: string) => {
@@ -33,6 +45,7 @@ export const useAuth = create<AuthState>((set) => ({
 
   logout: () => {
     localStorage.removeItem('access_token')
+    localStorage.removeItem('user')
     set({ user: null, isLoggedIn: false, error: null })
   },
 
@@ -42,6 +55,7 @@ export const useAuth = create<AuthState>((set) => ({
       const token = localStorage.getItem('access_token')
       if (!token) {
         set({ isLoggedIn: false, loading: false })
+        localStorage.removeItem('user')
         return
       }
 
@@ -50,6 +64,9 @@ export const useAuth = create<AuthState>((set) => ({
           Authorization: `Bearer ${token}`
         }
       })
+      
+      // Store user in local storage
+      localStorage.setItem('user', JSON.stringify(response.data))
       set({ user: response.data, loading: false })
     } catch (error) {
       console.error('Error fetching user:', error)
@@ -61,7 +78,8 @@ export const useAuth = create<AuthState>((set) => ({
 
 // Custom hook to handle initial data fetching
 export const useAuthWithFetch = () => {
-  const { fetchUser, isLoggedIn, loading, ...rest } = useAuth()
+  const { fetchUser, isLoggedIn, loading, logout, ...rest } = useAuth()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -69,7 +87,20 @@ export const useAuthWithFetch = () => {
     } else {
       useAuth.setState({ loading: false })
     }
-  }, [isLoggedIn, fetchUser])
+  }, [isLoggedIn])
 
-  return { ...rest, isLoggedIn, loading }
+  // Enhanced logout function that also invalidates query cache
+  const enhancedLogout = () => {
+    logout()
+    // Invalidate all queries when user logs out
+    queryClient.clear()
+  }
+
+  return { 
+    ...rest, 
+    isLoggedIn, 
+    loading, 
+    fetchUser,
+    logout: enhancedLogout 
+  }
 }
