@@ -813,6 +813,18 @@ async def get_chat_history(
     messages = await ws_manager.load_chat_history(conversation_id, limit)
     return messages
 
+### Test WebSocket connection
+
+@app.websocket("/ws/chat")
+async def websocket_chat(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            print(f"Received from client: {data}")
+            await websocket.send_text(f"Echo: {data}")
+    except Exception as e:
+        print(f"WebSocket closed: {e}")
 # =============================================
 # ROOT ENDPOINT
 # =============================================
