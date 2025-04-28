@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react"
-import { MessageSquare, User, Send, X, Bell } from "lucide-react"
+import { MessageSquare, User, Send, X, Bell, Wifi, WifiOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,6 +9,7 @@ import { useMessages, Message } from "@/hooks/useMessages"
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
 import { formatDistanceToNow } from "date-fns"
+import websocketService from "@/services/websocketService"
 
 // Simple Badge component
 interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -26,13 +27,33 @@ function Badge({ children, className = "", ...props }: BadgeProps) {
   );
 }
 
+// WebSocket connection status indicator
+function ConnectionStatus({ connected }: { connected: boolean }) {
+  return (
+    <div className="flex items-center text-xs">
+      {connected ? (
+        <>
+          <Wifi className="h-4 w-4 text-green-500 mr-1" />
+          <span className="text-green-500">Connected</span>
+        </>
+      ) : (
+        <>
+          <WifiOff className="h-4 w-4 text-red-500 mr-1" />
+          <span className="text-red-500">Disconnected</span>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function DoctorChat() {
   const { user } = useAuth()
-  const { messages, unreadCount, sendMessage, markAsRead, markAllAsRead, isLoading } = useMessages()
+  const { messages, unreadCount, sendMessage, markAsRead, markAllAsRead, isLoading, addMessage } = useMessages()
   const [chatOpen, setChatOpen] = useState(false)
   const [newMessage, setNewMessage] = useState("")
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [showNotification, setShowNotification] = useState(false)
+  const [wsConnected, setWsConnected] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // When we receive a new message, show a notification if the chat is closed
@@ -48,6 +69,93 @@ export function DoctorChat() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [messages, chatOpen, selectedUserId])
+
+  // Setup WebSocket connection
+  useEffect(() => {
+    if (!user) return;
+    
+    console.log("Setting up WebSocket with user:", user);
+
+    // Set connection change listener
+    const handleConnectionChange = (connected: boolean) => {
+      console.log("WebSocket connection changed:", connected);
+      setWsConnected(connected);
+    };
+
+    // Set message listener
+    const handleMessage = (message: any) => {
+      console.log("Received WebSocket message:", message);
+      
+      if (message.text && message.sender_id && message.receiver_id) {
+        // Create a Message object from the WebSocket message
+        const newMessage: Message = {
+          id: message.id || `temp-${Date.now()}`,
+          content: message.text,
+          sender_id: message.sender_id,
+          receiver_id: message.receiver_id,
+          timestamp: message.timestamp || new Date().toISOString(),
+          read: false
+        };
+        
+        // Add the message to our local state
+        addMessage(newMessage);
+
+        // Show notification if chat is closed or a different user is selected
+        if (!chatOpen || selectedUserId !== message.sender_id) {
+          setShowNotification(true);
+        }
+      }
+    };
+
+    // Add listeners
+    websocketService
+      .onConnectionChange(handleConnectionChange)
+      .onMessage(handleMessage);
+
+    // Return cleanup function
+    return () => {
+      websocketService
+        .offConnectionChange(handleConnectionChange)
+        .offMessage(handleMessage)
+        .disconnect();
+    };
+  }, [user, addMessage, chatOpen, selectedUserId]);
+
+  // Connect to WebSocket when chat opens
+  useEffect(() => {
+    if (!user || !chatOpen) return;
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.error("No access token found");
+      return;
+    }
+    
+    // If selected user ID changed while chat is open, need to update connection
+    if (selectedUserId) {
+      console.log(`Connecting to WebSocket for chat with: ${selectedUserId}`);
+      websocketService
+        .setToken(token)
+        .setUserId(user.id)
+        .setDoctorId(selectedUserId) // When doctor views chat, we swap the IDs
+        .connect();
+    } else {
+      // Connect to general channel when no specific user is selected
+      console.log("Connecting to general WebSocket chat");
+      websocketService
+        .setToken(token)
+        .setUserId(user.id)
+        .connect();
+    }
+
+    return () => {
+      // Don't disconnect immediately when the effect cleanup runs
+      // Only disconnect when the chat is closed
+      if (!chatOpen) {
+        websocketService.disconnect();
+      }
+    };
+  }, [user, chatOpen, selectedUserId]);
 
   // Get unique users from messages
   const getUniqueUsers = () => {
@@ -116,12 +224,36 @@ export function DoctorChat() {
     if (!newMessage.trim() || !selectedUserId) return
     
     try {
+      // Try WebSocket first
+      if (wsConnected) {
+        console.log("Sending via WebSocket");
+        const sent = websocketService.sendMessage(newMessage, selectedUserId);
+        
+        if (sent) {
+          // Create temporary message to display immediately
+          const tempMessage: Message = {
+            id: `temp-${Date.now()}`,
+            content: newMessage,
+            sender_id: user?.id || "",
+            receiver_id: selectedUserId,
+            timestamp: new Date().toISOString(),
+            read: true,
+            sender_name: user?.full_name || "You"
+          };
+          
+          // Add message locally
+          addMessage(tempMessage);
+          setNewMessage("");
+          return;
+        }
+      }
+      
+      // Fallback to API if WebSocket fails
       await sendMessage.mutateAsync({
         receiverId: selectedUserId,
         content: newMessage
-      })
-      setNewMessage("")
-      toast.success("Message sent")
+      });
+      setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error)
       toast.error("Failed to send message")
@@ -183,9 +315,12 @@ export function DoctorChat() {
           <DialogHeader className="p-4 border-b">
             <div className="flex items-center justify-between">
               <DialogTitle>Doctor Messages</DialogTitle>
-              <Button variant="ghost" size="icon" onClick={() => setChatOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <ConnectionStatus connected={wsConnected} />
+                <Button variant="ghost" size="icon" onClick={() => setChatOpen(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </DialogHeader>
           

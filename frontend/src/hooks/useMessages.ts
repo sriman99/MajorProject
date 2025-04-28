@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import { useAuth } from './useAuth'
+import { useState, useCallback } from 'react'
 
 // Message interface
 export interface Message {
@@ -17,6 +18,7 @@ export interface Message {
 export const useMessages = () => {
   const { user, isLoggedIn } = useAuth()
   const queryClient = useQueryClient()
+  const [localMessages, setLocalMessages] = useState<Message[]>([])
 
   // Get all messages for the current user
   const { data: messages, isLoading, error, isError } = useQuery({
@@ -40,6 +42,31 @@ export const useMessages = () => {
     enabled: isLoggedIn && !!user,
     refetchInterval: 30000, // Poll every 30 seconds for new messages
   })
+
+  // Add a message manually (for WebSocket messages)
+  const addMessage = useCallback((message: Message) => {
+    setLocalMessages(prev => {
+      // Check if the message already exists
+      const exists = [...prev, ...(messages || [])].some(m => m.id === message.id);
+      if (exists) return prev;
+      return [...prev, message];
+    });
+    
+    // Update cache with the new message
+    queryClient.setQueryData(['messages', user?.id], (oldData: Message[] | undefined) => {
+      if (!oldData) return [message];
+      // Check if the message already exists in the cache
+      if (oldData.some(m => m.id === message.id)) return oldData;
+      return [...oldData, message];
+    });
+    
+    // Update unread count if needed
+    if (!message.read && message.receiver_id === user?.id) {
+      queryClient.setQueryData(['unreadMessages', user?.id], (oldCount: number | undefined) => 
+        (oldCount || 0) + 1
+      );
+    }
+  }, [messages, queryClient, user]);
 
   // Get unread message count
   const { data: unreadCount } = useQuery({
@@ -114,14 +141,21 @@ export const useMessages = () => {
     },
   })
 
+  // Combine API fetched messages with local WebSocket messages
+  const allMessages = [...(messages || []), ...localMessages].filter((message, index, self) => {
+    // Remove duplicate messages (by id)
+    return index === self.findIndex(m => m.id === message.id);
+  });
+
   return {
-    messages: messages || [],
+    messages: allMessages,
     unreadCount: unreadCount || 0,
     isLoading,
     error,
     isError,
     sendMessage,
     markAsRead,
-    markAllAsRead
+    markAllAsRead,
+    addMessage
   }
 } 
