@@ -1,9 +1,8 @@
-from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form, BackgroundTasks, WebSocket
+from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form, BackgroundTasks, WebSocket, Request
 from fastapi.websockets import WebSocketDisconnect
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pymongo import MongoClient
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
@@ -14,28 +13,30 @@ from dotenv import load_dotenv
 import uuid
 import json
 from bson import ObjectId
-import requests
+import httpx
 from websocket_manager import WebSocketManager
 from middleware import WebSocketAuthMiddleware
 from cryptography.fernet import Fernet
 import base64
 import hashlib
-
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from database import (
+    connect_to_mongo,
+    close_mongo_connection,
+    get_users_collection,
+    get_doctors_collection,
+    get_hospitals_collection,
+    get_appointments_collection,
+    get_analysis_collection
+)
 
 # Load environment variables
 load_dotenv()
 
-# MongoDB connection
+# MongoDB URL
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-client = MongoClient(MONGODB_URL)
-db = client.healthcare_db
-
-# Collections
-users_collection = db.users
-doctors_collection = db.doctors
-hospitals_collection = db.hospitals
-appointments_collection = db.appointments
-analysis_collection = db.analysis
 
 # JWT Settings
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
@@ -46,16 +47,33 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 600
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(title="Healthcare API", description="API for healthcare application")
 
-# CORS middleware
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS middleware - Restricted to frontend origin
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Modify this in production
+    allow_origins=[FRONTEND_URL, "http://localhost:5173"],  # Only allow frontend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Startup and shutdown events
+@app.on_event("startup")
+async def startup_db_client():
+    await connect_to_mongo()
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    await close_mongo_connection()
 
 # =============================================
 # MODELS
@@ -71,6 +89,21 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     confirm_password: str
+
+    @validator('password')
+    def password_strength(cls, v):
+        """Validate password strength"""
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not any(char.isdigit() for char in v):
+            raise ValueError('Password must contain at least one digit')
+        if not any(char.isupper() for char in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(char.islower() for char in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not any(char in '!@#$%^&*()_+-=[]{}|;:,.<>?' for char in v):
+            raise ValueError('Password must contain at least one special character')
+        return v
 
     @validator('confirm_password')
     def passwords_match(cls, v, values):
@@ -178,18 +211,46 @@ class Analysis(AnalysisBase):
 # HELPER FUNCTIONS
 # =============================================
 
+# File size limits (in bytes)
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_AUDIO_FILE_SIZE = 20 * 1024 * 1024  # 20MB
+
+async def validate_file_size(file: UploadFile, max_size: int = MAX_FILE_SIZE):
+    """Validate file size without reading entire file into memory"""
+    # Read file in chunks to check size
+    file_size = 0
+    chunk_size = 1024 * 1024  # 1MB chunks
+
+    # Reset file pointer
+    await file.seek(0)
+
+    while chunk := await file.read(chunk_size):
+        file_size += len(chunk)
+        if file_size > max_size:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Maximum size is {max_size / (1024*1024):.0f}MB"
+            )
+
+    # Reset file pointer for actual processing
+    await file.seek(0)
+    return file_size
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-def get_user(username: str):
-    user = users_collection.find_one({"email": username})
+async def get_user(username: str):
+    """Get user by email (async)"""
+    users_collection = get_users_collection()
+    user = await users_collection.find_one({"email": username})
     return user
 
-def authenticate_user(username: str, password: str):
-    user = get_user(username)
+async def authenticate_user(username: str, password: str):
+    """Authenticate user (async)"""
+    user = await get_user(username)
     if not user:
         return False
     if not verify_password(password, user["password"]):
@@ -207,6 +268,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
+    """Get current user from JWT token (async)"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -221,7 +283,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username, role=role)
     except JWTError:
         raise credentials_exception
-    user = get_user(token_data.username)
+    user = await get_user(token_data.username)
     if user is None:
         raise credentials_exception
     return user
@@ -253,26 +315,31 @@ async def check_doctor_role(current_user = Depends(get_current_active_user)):
 # =============================================
 
 @app.post("/signup", response_model=User)
-async def signup(user: UserCreate):
+@limiter.limit("5/minute")  # Limit to 5 signups per minute per IP
+async def signup(request: Request, user: UserCreate):
+    users_collection = get_users_collection()
+    doctors_collection = get_doctors_collection()
+
     # Check if user already exists
-    if users_collection.find_one({"email": user.email}):
+    existing_user = await users_collection.find_one({"email": user.email})
+    if existing_user:
         raise HTTPException(
             status_code=400,
             detail="Email already registered"
         )
-    
+
     # Create new user
     user_dict = user.dict(exclude={'confirm_password'})
     user_dict["password"] = get_password_hash(user_dict["password"])
     user_dict["is_active"] = True
     user_dict["id"] = str(uuid.uuid4())
-    
+
     # Set username to email if not provided
     if not user_dict.get("username"):
         user_dict["username"] = user_dict["email"]
-    
-    users_collection.insert_one(user_dict)
-    
+
+    await users_collection.insert_one(user_dict)
+
     # If user is a doctor, create a doctor profile
     if user.role == "doctor":
         doctor = DoctorCreate(
@@ -288,8 +355,8 @@ async def signup(user: UserCreate):
         doctor_dict["id"] = str(uuid.uuid4())
         doctor_dict["locations"] = []
         doctor_dict["timings"] = {"hours": "", "days": ""}
-        doctors_collection.insert_one(doctor_dict)
-    
+        await doctors_collection.insert_one(doctor_dict)
+
     return User(
         id=user_dict["id"],
         email=user_dict["email"],
@@ -301,9 +368,12 @@ async def signup(user: UserCreate):
     )
 
 @app.post("/token", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+@limiter.limit("10/minute")  # Limit to 10 login attempts per minute per IP
+async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
+    users_collection = get_users_collection()
+
     # Find user by email instead of username
-    user = users_collection.find_one({"email": form_data.username})
+    user = await users_collection.find_one({"email": form_data.username})
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -318,7 +388,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user["email"], "role": user["role"]}, 
+        data={"sub": user["email"], "role": user["role"]},
         expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
@@ -622,10 +692,13 @@ async def upload_analysis(
     file: UploadFile = File(...),
     current_user = Depends(get_current_active_user)
 ):
+    # Validate file size
+    await validate_file_size(file, MAX_FILE_SIZE)
+
     # Save file to disk (in a real app, you would use cloud storage)
     file_path = f"uploads/{current_user['id']}_{file.filename}"
     os.makedirs("uploads", exist_ok=True)
-    
+
     with open(file_path, "wb") as buffer:
         content = await file.read()
         buffer.write(content)
@@ -716,26 +789,48 @@ async def get_analysis(current_user = Depends(get_current_active_user)):
 async def analyze_lung_disease(
     audio_file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
-):    # Forward the request to ML service
-    files = {'audio_file': (audio_file.filename, audio_file.file, 'audio/wav')}
-    response = requests.post('http://localhost:8001/predict', files=files)
-    
-    if response.status_code == 200:
-        result = response.json()
-        
-        # Store analysis result in database
-        analysis_data = {
-            "user_id": current_user["id"],
-            "disease_type": result.get("disease"),
-            "confidence": result.get("confidence"),
-            "result": result,
-            "timestamp": datetime.utcnow()
-        }
-        analysis_collection.insert_one(analysis_data)
-        
-        return result
-    else:
-        raise HTTPException(status_code=500, detail="Prediction service error")
+):
+    analysis_collection = get_analysis_collection()
+
+    # Validate audio file size
+    await validate_file_size(audio_file, MAX_AUDIO_FILE_SIZE)
+
+    # ML service URL from environment
+    ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://localhost:8001/predict")
+
+    try:
+        # Reset file pointer before reading
+        await audio_file.seek(0)
+        file_content = await audio_file.read()
+
+        # Forward the request to ML service using async httpx
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            files = {'audio_file': (audio_file.filename, file_content, 'audio/wav')}
+            response = await client.post(ML_SERVICE_URL, files=files)
+
+            if response.status_code == 200:
+                result = response.json()
+
+                # Store analysis result in database
+                analysis_data = {
+                    "user_id": current_user["id"],
+                    "disease_type": result.get("disease"),
+                    "confidence": result.get("confidence"),
+                    "result": result,
+                    "timestamp": datetime.utcnow()
+                }
+                await analysis_collection.insert_one(analysis_data)
+
+                return result
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Prediction service error: {response.text}"
+                )
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="ML service timeout")
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"ML service unavailable: {str(e)}")
 # =============================================
 # WEBSOCKET CHAT ENDPOINTS
 # =============================================

@@ -7,10 +7,11 @@ import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { useAuthWithFetch } from "@/hooks/useAuth"
 import { Skeleton } from "@/components/ui/skeleton"
-import axios from "axios"
 import { toast } from "sonner"
 import { Link } from "react-router-dom"
 import { Clipboard } from "lucide-react"
+import { appointmentsApi, analysisApi, doctorsApi } from "@/services/api"
+import type { Appointment as ApiAppointment, Analysis as ApiAnalysis } from "@/services/api"
 
 interface HealthMetric {
   title: string;
@@ -224,59 +225,50 @@ export default function PatientDashboard() {
   const [loadingData, setLoadingData] = useState(true)
   const [dataError, setDataError] = useState<string | null>(null)
 
-  // Fetch appointments and analyses
+  // Fetch appointments and analyses using API service
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
-      
+
       try {
         setLoadingData(true);
         setDataError(null);
-        const token = localStorage.getItem('access_token');
-        
-        // Fetch appointments
-        const appointmentsResponse = await axios.get('http://localhost:8000/appointments', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        
-        // Fetch analyses (health records)
-        const analysesResponse = await axios.get('http://localhost:8000/analysis', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        
+
+        // Fetch appointments and analyses in parallel
+        const [appointmentsData, analysesData] = await Promise.all([
+          appointmentsApi.getAll(),
+          analysisApi.getAll()
+        ]);
+
         // Set state with fetched data
-        setAppointments(appointmentsResponse.data);
-        setAnalyses(analysesResponse.data);
-        
+        setAppointments(appointmentsData as any);
+        setAnalyses(analysesData as any);
+
         // Update dashboard stats
-        const upcomingAppointments = appointmentsResponse.data.filter(
-          (app: Appointment) => app.status !== 'completed' && app.status !== 'cancelled'
+        const upcomingAppointments = appointmentsData.filter(
+          (app) => app.status !== 'completed' && app.status !== 'cancelled'
         ).length;
-        
-        const completedConsultations = appointmentsResponse.data.filter(
-          (app: Appointment) => app.status === 'completed'
+
+        const completedConsultations = appointmentsData.filter(
+          (app) => app.status === 'completed'
         ).length;
-        
+
         setDashboardStats({
           upcomingAppointments,
           completedConsultations,
-          healthRecords: analysesResponse.data.length,
-          messages: 5 // Mock data for messages
+          healthRecords: analysesData.length,
+          messages: 5 // TODO: Implement real messages count
         });
-        
+
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
-        setDataError('Failed to load dashboard data. Please try again.');
+        setDataError('Failed to load dashboard data. Please refresh the page.');
         toast.error('Failed to load dashboard data');
       } finally {
         setLoadingData(false);
       }
     };
-    
+
     if (user) {
       fetchData();
     }
