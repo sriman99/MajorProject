@@ -193,13 +193,51 @@ export interface User {
   role: 'admin' | 'doctor' | 'user';
   username?: string;
   is_active: boolean;
+  avatar_url?: string;
   doctor_profile?: Doctor;
+}
+
+export interface UserProfileUpdate {
+  full_name: string;
+  phone: string;
+  username?: string;
+}
+
+export interface PasswordChange {
+  current_password: string;
+  new_password: string;
+  confirm_new_password: string;
 }
 
 export const usersApi = {
   // Get current user profile
   getMe: async (): Promise<User> => {
     const response = await apiClient.get('/users/me');
+    return response.data;
+  },
+
+  // Update current user profile
+  updateProfile: async (data: UserProfileUpdate): Promise<User> => {
+    const response = await apiClient.put('/users/me', data);
+    return response.data;
+  },
+
+  // Change password
+  changePassword: async (data: PasswordChange): Promise<{ message: string }> => {
+    const response = await apiClient.put('/users/me/password', data);
+    return response.data;
+  },
+
+  // Upload avatar
+  uploadAvatar: async (file: File): Promise<{ avatar_url: string; message: string }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const response = await apiClient.post('/users/me/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

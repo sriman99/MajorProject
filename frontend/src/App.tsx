@@ -19,6 +19,7 @@ import DoctorDashboard from './pages/doctor/Dashboard'
 import AdminDashboard from './pages/admin/Dashboard'
 import AppointmentManagement from './pages/AppointmentManagement'
 import Contact from './pages/Contact'
+import Settings from './pages/Settings'
 import { ChatBot } from './components/chat/ChatBot'
 import { DoctorChat } from './components/chat/DoctorChat'
 import { useUserRole, getUserRole } from './hooks/useUserRole'
@@ -154,7 +155,14 @@ function AppLayout() {
         <Route path="/hospitals" element={<Hospitals />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/testimonials" element={<Testimonials />} />
-        
+
+        {/* Settings route - accessible to all authenticated users */}
+        <Route path="/settings" element={
+          <ProtectedRoute requiredRole={null}>
+            <Settings />
+          </ProtectedRoute>
+        } />
+
         {/* Role-specific routes */}
         <Route path="/patient/dashboard" element={
           <ProtectedRoute requiredRole="patient">

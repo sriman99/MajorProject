@@ -85,6 +85,7 @@ class UserBase(BaseModel):
     phone: str
     role: Literal["admin", "doctor", "user"]
     username: Optional[str] = None
+    avatar_url: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -206,6 +207,46 @@ class Analysis(AnalysisBase):
 
     class Config:
         from_attributes = True
+
+class UserProfileUpdate(BaseModel):
+    full_name: str
+    phone: str
+    username: Optional[str] = None
+
+    @validator('phone')
+    def validate_phone(cls, v):
+        """Validate phone number format"""
+        # Remove all non-digit characters
+        digits = ''.join(filter(str.isdigit, v))
+        if len(digits) < 10:
+            raise ValueError('Phone number must be at least 10 digits')
+        return v
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_new_password: str
+
+    @validator('new_password')
+    def password_strength(cls, v):
+        """Validate password strength"""
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not any(char.isdigit() for char in v):
+            raise ValueError('Password must contain at least one digit')
+        if not any(char.isupper() for char in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(char.islower() for char in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not any(char in '!@#$%^&*()_+-=[]{}|;:,.<>?' for char in v):
+            raise ValueError('Password must contain at least one special character')
+        return v
+
+    @validator('confirm_new_password')
+    def passwords_match(cls, v, values):
+        if 'new_password' in values and v != values['new_password']:
+            raise ValueError('Passwords do not match')
+        return v
 
 # =============================================
 # HELPER FUNCTIONS
@@ -395,6 +436,7 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
 
 @app.get("/users/me", response_model=UserWithDoctorProfile)
 async def read_users_me(current_user = Depends(get_current_active_user)):
+    doctors_collection = get_doctors_collection()
     response = {
         "id": current_user["id"],
         "email": current_user["email"],
@@ -403,23 +445,135 @@ async def read_users_me(current_user = Depends(get_current_active_user)):
         "role": current_user["role"],
         "is_active": current_user.get("is_active", True),
         "username": current_user.get("username", current_user["email"]),
+        "avatar_url": current_user.get("avatar_url"),
         "doctor_profile": None
     }
-    
+
     # If user is a doctor, include their doctor profile
     if current_user["role"] == "doctor":
-        doctor = doctors_collection.find_one({"user_id": current_user["id"]})
+        doctor = await doctors_collection.find_one({"user_id": current_user["id"]})
         if doctor:
             # Remove MongoDB _id field
             if "_id" in doctor:
                 del doctor["_id"]
             response["doctor_profile"] = doctor
-    
+
     return UserWithDoctorProfile(**response)
+
+@app.put("/users/me", response_model=User)
+async def update_user_profile(
+    profile_data: UserProfileUpdate,
+    current_user = Depends(get_current_active_user)
+):
+    """Update current user's profile information"""
+    users_collection = get_users_collection()
+
+    # Prepare update data
+    update_data = {
+        "full_name": profile_data.full_name,
+        "phone": profile_data.phone,
+    }
+
+    # Add username if provided
+    if profile_data.username:
+        update_data["username"] = profile_data.username
+
+    # Update user in database
+    await users_collection.update_one(
+        {"id": current_user["id"]},
+        {"$set": update_data}
+    )
+
+    # Fetch updated user
+    updated_user = await users_collection.find_one({"id": current_user["id"]})
+
+    return User(
+        id=updated_user["id"],
+        email=updated_user["email"],
+        full_name=updated_user["full_name"],
+        phone=updated_user["phone"],
+        role=updated_user["role"],
+        is_active=updated_user.get("is_active", True),
+        username=updated_user.get("username", updated_user["email"]),
+        avatar_url=updated_user.get("avatar_url")
+    )
+
+@app.put("/users/me/password")
+async def change_password(
+    password_data: PasswordChange,
+    current_user = Depends(get_current_active_user)
+):
+    """Change current user's password"""
+    users_collection = get_users_collection()
+
+    # Verify current password
+    if not verify_password(password_data.current_password, current_user["password"]):
+        raise HTTPException(
+            status_code=400,
+            detail="Current password is incorrect"
+        )
+
+    # Hash new password
+    hashed_password = get_password_hash(password_data.new_password)
+
+    # Update password in database
+    await users_collection.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"password": hashed_password}}
+    )
+
+    return {"message": "Password updated successfully"}
+
+@app.post("/users/me/avatar")
+async def upload_avatar(
+    avatar: UploadFile = File(...),
+    current_user = Depends(get_current_active_user)
+):
+    """Upload user avatar/profile picture"""
+    users_collection = get_users_collection()
+
+    # Validate file type
+    allowed_types = ["image/jpeg", "image/jpg", "image/png"]
+    if avatar.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Only JPG and PNG images are allowed."
+        )
+
+    # Validate file size (5MB max)
+    MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5MB
+    await validate_file_size(avatar, MAX_AVATAR_SIZE)
+
+    # Create avatars directory if it doesn't exist
+    avatars_dir = "uploads/avatars"
+    os.makedirs(avatars_dir, exist_ok=True)
+
+    # Generate unique filename
+    file_extension = avatar.filename.split(".")[-1]
+    filename = f"{current_user['id']}_{uuid.uuid4()}.{file_extension}"
+    file_path = os.path.join(avatars_dir, filename)
+
+    # Save file
+    await avatar.seek(0)
+    with open(file_path, "wb") as buffer:
+        content = await avatar.read()
+        buffer.write(content)
+
+    # Update user's avatar_url in database
+    avatar_url = f"/{file_path}"
+    await users_collection.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"avatar_url": avatar_url}}
+    )
+
+    return {"avatar_url": avatar_url, "message": "Avatar uploaded successfully"}
 
 @app.get("/users", response_model=List[User])
 async def get_all_users(current_user = Depends(check_admin_role)):
-    users = list(users_collection.find())
+    users_collection = get_users_collection()
+    users = []
+    async for user in users_collection.find():
+        users.append(user)
     return [
         User(
             id=user["id"],
@@ -428,7 +582,8 @@ async def get_all_users(current_user = Depends(check_admin_role)):
             phone=user["phone"],
             role=user["role"],
             is_active=user.get("is_active", True),
-            username=user.get("username", user["email"])
+            username=user.get("username", user["email"]),
+            avatar_url=user.get("avatar_url")
         ) for user in users
     ]
 
