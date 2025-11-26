@@ -3,14 +3,14 @@ import { useState } from "react";
 
 
 export default function ProfileMenu() {
-    const { isLoggedIn, token } = useAuth();
+    const { isLoggedIn, user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
 
     if (!isLoggedIn) {
         return <div>Please log in</div>;
     }
 
-    if (!token) {
+    if (!user) {
         return <div>User not found</div>;
     }
 
@@ -22,7 +22,7 @@ export default function ProfileMenu() {
         <div className="relative">
             <button onClick={handleToggle} className="flex items-center">
                 <img
-                    src={user.avatar}
+                    src={user.avatar_url || '/default-avatar.png'}
                     alt="User Avatar"
                     className="w-8 h-8 rounded-full"
                 />
@@ -30,7 +30,7 @@ export default function ProfileMenu() {
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg">
                     <div className="p-4">
-                        <h3 className="text-lg font-semibold">{user.name}</h3>
+                        <h3 className="text-lg font-semibold">{user.full_name}</h3>
                         <p className="text-sm text-gray-600">{user.email}</p>
                     </div>
                     <hr />

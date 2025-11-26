@@ -9,7 +9,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { useAuthWithFetch } from '@/hooks/useAuth'
 import { usersApi, type UserProfileUpdate, type PasswordChange } from '@/services/api'
 import { toast } from 'sonner'
-import { Loader2, Upload, User, Lock, Bell, UserX, Camera } from 'lucide-react'
+import { Loader2, User, Lock, Bell, UserX, Camera } from 'lucide-react'
 
 export default function Settings() {
   const { user, fetchUser } = useAuthWithFetch()
@@ -76,7 +76,7 @@ export default function Settings() {
     setLoading(true)
 
     try {
-      const updatedUser = await usersApi.updateProfile(profileData)
+      await usersApi.updateProfile(profileData)
       toast.success('Profile updated successfully!')
 
       // Refresh user data
@@ -175,7 +175,7 @@ export default function Settings() {
     // Upload to server
     setAvatarLoading(true)
     try {
-      const result = await usersApi.uploadAvatar(file)
+      await usersApi.uploadAvatar(file)
       toast.success('Avatar uploaded successfully!')
 
       // Refresh user data

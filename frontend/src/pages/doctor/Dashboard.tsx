@@ -1,8 +1,7 @@
-import { LayoutDashboard, Calendar, MessageCircle, Video, User, Settings, FileText, Stethoscope, Clock, Users, Activity, TrendingUp, AlertCircle, CheckCircle2, XCircle, Bell, Plus, Search, Filter, X, RefreshCw } from "lucide-react"
+import { Calendar, Stethoscope, Clock, Users, CheckCircle2, Plus, RefreshCw } from "lucide-react"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
@@ -11,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuthWithFetch } from "@/hooks/useAuth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
-import { doctorsApi, appointmentsApi, DoctorStats, PatientInfo, AppointmentWithPatient } from "@/services/api"
+import { doctorsApi, appointmentsApi, type DoctorStats, type PatientInfo, type AppointmentWithPatient } from "@/services/api"
 
 export default function DoctorDashboard() {
   const navigate = useNavigate()
@@ -117,7 +116,7 @@ export default function DoctorDashboard() {
     navigate("/appointments/manage")
   }
 
-  const handleUpdateAppointmentStatus = async (appointmentId: string, status: 'confirmed' | 'completed' | 'cancelled') => {
+  const _handleUpdateAppointmentStatus = async (appointmentId: string, status: 'confirmed' | 'completed' | 'cancelled') => {
     try {
       await appointmentsApi.updateStatus(appointmentId, status)
       toast.success(`Appointment ${status} successfully`)
@@ -128,6 +127,7 @@ export default function DoctorDashboard() {
       toast.error('Failed to update appointment')
     }
   }
+  void _handleUpdateAppointmentStatus
 
   if (userLoading || loading) {
     return (
@@ -188,9 +188,6 @@ export default function DoctorDashboard() {
   const languages = user?.doctor_profile?.languages || []
   const qualifications = user?.doctor_profile?.qualifications || "Not specified"
   const name = user?.full_name || user?.doctor_profile?.name || "Doctor"
-
-  // Estimate consultation time (30 mins per appointment)
-  const estimatedTime = stats ? Math.round((stats.todays_appointments * 30) / 60 * 10) / 10 : 0
 
   // Generate stats data from real data
   const statsCards = [
@@ -328,7 +325,7 @@ export default function DoctorDashboard() {
                   <Icon className={`h-4 w-4 ${stat.color}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}{stat.unit && <span className="text-sm ml-1">{stat.unit}</span>}</div>
+                  <div className="text-2xl font-bold">{stat.value}</div>
                   <p className={`text-xs ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
                     {stat.change} from yesterday
                   </p>
@@ -435,7 +432,7 @@ export default function DoctorDashboard() {
             <CardContent>
               {recentPatients.length > 0 ? (
                 <div className="space-y-4">
-                  {recentPatients.map((patient, index) => (
+                  {recentPatients.map((patient) => (
                     <div
                       key={patient.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
