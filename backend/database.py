@@ -51,3 +51,6 @@ def get_analysis_collection():
 
 def get_payments_collection():
     return database.db.payments
+
+def get_notifications_collection():
+    return database.db.notifications

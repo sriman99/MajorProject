@@ -31,7 +31,8 @@ from database import (
     get_hospitals_collection,
     get_appointments_collection,
     get_analysis_collection,
-    get_payments_collection
+    get_payments_collection,
+    get_notifications_collection
 )
 from email_service import (
     send_welcome_email,
@@ -313,6 +314,7 @@ class AppointmentWithPatient(BaseModel):
     created_at: str
     patient: Optional[Dict[str, Any]] = None
 
+<<<<<<< HEAD
 class PaymentCreate(BaseModel):
     amount: float
     appointment_id: str
@@ -325,11 +327,35 @@ class Payment(BaseModel):
     amount: float
     status: Literal["success", "pending", "failed"]
     payment_method: str
+=======
+class NotificationCreate(BaseModel):
+    user_id: str
+    title: str
+    message: str
+    type: Literal["appointment", "message", "alert", "success"]
+    link: Optional[str] = None
+
+class Notification(BaseModel):
+    id: str
+    user_id: str
+    title: str
+    message: str
+    type: Literal["appointment", "message", "alert", "success"]
+    link: Optional[str] = None
+    is_read: bool = False
+>>>>>>> feature/notifications
     created_at: str
 
     class Config:
         from_attributes = True
 
+<<<<<<< HEAD
+=======
+class NotificationsResponse(BaseModel):
+    notifications: List[Notification]
+    unread_count: int
+
+>>>>>>> feature/notifications
 # =============================================
 # HELPER FUNCTIONS
 # =============================================
@@ -432,6 +458,30 @@ async def check_doctor_role(current_user = Depends(get_current_active_user)):
             detail="Not enough permissions"
         )
     return current_user
+
+async def create_notification(
+    user_id: str,
+    title: str,
+    message: str,
+    notification_type: str,
+    link: Optional[str] = None
+):
+    """Helper function to create a notification"""
+    notifications_collection = get_notifications_collection()
+
+    notification = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "title": title,
+        "message": message,
+        "type": notification_type,
+        "link": link,
+        "is_read": False,
+        "created_at": datetime.utcnow().isoformat()
+    }
+
+    await notifications_collection.insert_one(notification)
+    return notification
 
 # =============================================
 # AUTHENTICATION ENDPOINTS
@@ -644,6 +694,18 @@ async def forgot_password(request: Request, forgot_request: ForgotPasswordReques
         # TODO: In production, send email with reset link
         # reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
         # send_email(forgot_request.email, reset_link)
+
+        # Create notification for password reset request
+        try:
+            await create_notification(
+                user_id=user["id"],
+                title="Password Reset Requested",
+                message="A password reset was requested for your account. If this wasn't you, please contact support immediately.",
+                notification_type="alert",
+                link=None
+            )
+        except Exception as e:
+            print(f"Failed to create password reset notification: {str(e)}")
 
     return {"message": "If the email exists, a password reset link has been sent"}
 
@@ -1333,6 +1395,21 @@ async def create_appointment(
         # Log error but don't block appointment creation
         print(f"Failed to send appointment confirmation email: {str(e)}")
 
+    # Create notification for doctor about new appointment
+    try:
+        users_collection = get_users_collection()
+        doctor_user = await users_collection.find_one({"id": doctor.get("user_id")})
+        if doctor_user:
+            await create_notification(
+                user_id=doctor_user["id"],
+                title="New Appointment",
+                message=f"{current_user.get('full_name', 'A patient')} booked an appointment on {appointment_dict['date']} at {appointment_dict['time']}",
+                notification_type="appointment",
+                link=f"/doctor/appointments"
+            )
+    except Exception as e:
+        print(f"Failed to create notification for doctor: {str(e)}")
+
     return Appointment(
         id=appointment_dict["id"],
         doctor_id=appointment_dict["doctor_id"],
@@ -1405,8 +1482,53 @@ async def update_appointment(
 
     updated_appointment = await appointments_collection.find_one({"id": appointment_id})
 
+    # Get patient and doctor details for notifications
+    patient = await users_collection.find_one({"id": appointment["patient_id"]})
+    doctor = await doctors_collection.find_one({"id": appointment["doctor_id"]})
+
+    # Create notifications based on status change
+    old_status = appointment.get("status")
+
+    # Notify patient when appointment is confirmed
+    if status == "confirmed" and old_status != "confirmed":
+        try:
+            await create_notification(
+                user_id=appointment["patient_id"],
+                title="Appointment Confirmed",
+                message=f"Your appointment with Dr. {doctor.get('name', 'Unknown')} on {appointment['date']} at {appointment['time']} has been confirmed",
+                notification_type="success",
+                link="/patient/appointments"
+            )
+        except Exception as e:
+            print(f"Failed to create confirmation notification: {str(e)}")
+
+    # Notify both parties when appointment is cancelled
+    if status == "cancelled" and old_status != "cancelled":
+        try:
+            # Notify patient
+            await create_notification(
+                user_id=appointment["patient_id"],
+                title="Appointment Cancelled",
+                message=f"Your appointment with Dr. {doctor.get('name', 'Unknown')} on {appointment['date']} at {appointment['time']} has been cancelled",
+                notification_type="alert",
+                link="/patient/appointments"
+            )
+
+            # Notify doctor
+            doctor_user = await users_collection.find_one({"id": doctor.get("user_id")})
+            if doctor_user:
+                await create_notification(
+                    user_id=doctor_user["id"],
+                    title="Appointment Cancelled",
+                    message=f"Appointment with {patient.get('full_name', 'Patient')} on {appointment['date']} at {appointment['time']} has been cancelled",
+                    notification_type="alert",
+                    link="/doctor/appointments"
+                )
+        except Exception as e:
+            print(f"Failed to create cancellation notifications: {str(e)}")
+
     # Send cancellation email if status changed to cancelled
-    if status == "cancelled" and appointment.get("status") != "cancelled":
+    if status == "cancelled" and old_status != "cancelled":
         try:
             # Get patient, doctor, and hospital details
             patient = await users_collection.find_one({"id": appointment["patient_id"]})
@@ -1600,6 +1722,90 @@ async def analyze_lung_disease(
         raise HTTPException(status_code=504, detail="ML service timeout")
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"ML service unavailable: {str(e)}")
+
+# =============================================
+# NOTIFICATION ENDPOINTS
+# =============================================
+
+@app.get("/notifications", response_model=NotificationsResponse)
+async def get_notifications(current_user = Depends(get_current_active_user)):
+    """Get all notifications for current user with unread count"""
+    notifications_collection = get_notifications_collection()
+
+    # Get all notifications for user (sorted by created_at descending)
+    cursor = notifications_collection.find({"user_id": current_user["id"]}).sort("created_at", -1)
+    notifications_list = await cursor.to_list(length=100)
+
+    # Remove MongoDB _id field
+    for notification in notifications_list:
+        if "_id" in notification:
+            del notification["_id"]
+
+    # Count unread notifications
+    unread_count = sum(1 for n in notifications_list if not n.get("is_read", False))
+
+    return NotificationsResponse(
+        notifications=[Notification(**n) for n in notifications_list],
+        unread_count=unread_count
+    )
+
+@app.put("/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    current_user = Depends(get_current_active_user)
+):
+    """Mark a notification as read"""
+    notifications_collection = get_notifications_collection()
+
+    # Find and update notification
+    result = await notifications_collection.update_one(
+        {"id": notification_id, "user_id": current_user["id"]},
+        {"$set": {"is_read": True}}
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="Notification not found"
+        )
+
+    return {"message": "Notification marked as read", "notification_id": notification_id}
+
+@app.put("/notifications/read-all")
+async def mark_all_notifications_read(current_user = Depends(get_current_active_user)):
+    """Mark all notifications as read for current user"""
+    notifications_collection = get_notifications_collection()
+
+    result = await notifications_collection.update_many(
+        {"user_id": current_user["id"], "is_read": False},
+        {"$set": {"is_read": True}}
+    )
+
+    return {
+        "message": "All notifications marked as read",
+        "count": result.modified_count
+    }
+
+@app.delete("/notifications/{notification_id}")
+async def delete_notification(
+    notification_id: str,
+    current_user = Depends(get_current_active_user)
+):
+    """Delete a notification"""
+    notifications_collection = get_notifications_collection()
+
+    result = await notifications_collection.delete_one(
+        {"id": notification_id, "user_id": current_user["id"]}
+    )
+
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="Notification not found"
+        )
+
+    return {"message": "Notification deleted", "notification_id": notification_id}
+
 # =============================================
 # WEBSOCKET CHAT ENDPOINTS
 # =============================================
