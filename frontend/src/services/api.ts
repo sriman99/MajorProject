@@ -18,7 +18,7 @@ const apiClient = axios.create({
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,7 +33,7 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       // Token expired or invalid
-      localStorage.removeItem('token');
+      localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       window.location.href = '/login';
       toast.error('Session expired. Please login again.');
@@ -115,6 +115,30 @@ export interface Doctor {
   };
 }
 
+export interface DoctorStats {
+  todays_appointments: number;
+  total_patients: number;
+  pending_appointments: number;
+  completed_this_week: number;
+}
+
+export interface PatientInfo {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  last_appointment_date?: string;
+}
+
+export interface AppointmentWithPatient extends Appointment {
+  patient?: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
+}
+
 export const doctorsApi = {
   // Get all doctors
   getAll: async (specialty?: string): Promise<Doctor[]> => {
@@ -132,6 +156,33 @@ export const doctorsApi = {
   // Get current doctor's profile
   getMyProfile: async (): Promise<Doctor> => {
     const response = await apiClient.get('/doctors/me');
+    return response.data;
+  },
+
+  // Get current doctor's statistics
+  getMyStats: async (): Promise<DoctorStats> => {
+    const response = await apiClient.get('/doctors/me/stats');
+    return response.data;
+  },
+
+  // Get current doctor's patients
+  getMyPatients: async (): Promise<PatientInfo[]> => {
+    const response = await apiClient.get('/doctors/me/patients');
+    return response.data;
+  },
+
+  // Get current doctor's schedule
+  getMySchedule: async (
+    startDate?: string,
+    endDate?: string,
+    status?: string
+  ): Promise<AppointmentWithPatient[]> => {
+    const params: Record<string, string> = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    if (status) params.status = status;
+
+    const response = await apiClient.get('/doctors/me/schedule', { params });
     return response.data;
   },
 };

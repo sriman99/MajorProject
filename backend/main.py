@@ -248,6 +248,30 @@ class PasswordChange(BaseModel):
             raise ValueError('Passwords do not match')
         return v
 
+class DoctorStats(BaseModel):
+    todays_appointments: int
+    total_patients: int
+    pending_appointments: int
+    completed_this_week: int
+
+class PatientInfo(BaseModel):
+    id: str
+    name: str
+    email: str
+    phone: str
+    last_appointment_date: Optional[str] = None
+
+class AppointmentWithPatient(BaseModel):
+    id: str
+    doctor_id: str
+    patient_id: str
+    date: str
+    time: str
+    reason: str
+    status: Literal["pending", "confirmed", "cancelled", "completed"]
+    created_at: str
+    patient: Optional[Dict[str, Any]] = None
+
 # =============================================
 # HELPER FUNCTIONS
 # =============================================
@@ -694,6 +718,163 @@ async def get_my_doctor_profile(current_user = Depends(check_doctor_role)):
         locations=doctor["locations"],
         timings=doctor["timings"]
     )
+
+@app.get("/doctors/me/stats", response_model=DoctorStats)
+async def get_doctor_stats(current_user = Depends(check_doctor_role)):
+    """Get statistics for the current doctor"""
+    doctors_collection = get_doctors_collection()
+    appointments_collection = get_appointments_collection()
+
+    # Get doctor profile
+    doctor = await doctors_collection.find_one({"user_id": current_user["id"]})
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+
+    # Get today's date
+    today = datetime.utcnow().date()
+    today_str = today.isoformat()
+
+    # Calculate start of the week (Monday)
+    week_start = today - timedelta(days=today.weekday())
+    week_start_str = week_start.isoformat()
+
+    # Get all appointments for this doctor
+    all_appointments = await appointments_collection.find({"doctor_id": doctor["id"]}).to_list(length=None)
+
+    # Count today's appointments
+    todays_appointments = len([a for a in all_appointments if a["date"] == today_str])
+
+    # Count pending appointments
+    pending_appointments = len([a for a in all_appointments if a["status"] == "pending"])
+
+    # Count completed appointments this week
+    completed_this_week = len([
+        a for a in all_appointments
+        if a["status"] == "completed" and a["date"] >= week_start_str and a["date"] <= today_str
+    ])
+
+    # Count unique patients
+    unique_patient_ids = set(a["patient_id"] for a in all_appointments)
+    total_patients = len(unique_patient_ids)
+
+    return DoctorStats(
+        todays_appointments=todays_appointments,
+        total_patients=total_patients,
+        pending_appointments=pending_appointments,
+        completed_this_week=completed_this_week
+    )
+
+@app.get("/doctors/me/patients", response_model=List[PatientInfo])
+async def get_doctor_patients(current_user = Depends(check_doctor_role)):
+    """Get list of patients who have appointments with this doctor"""
+    doctors_collection = get_doctors_collection()
+    appointments_collection = get_appointments_collection()
+    users_collection = get_users_collection()
+
+    # Get doctor profile
+    doctor = await doctors_collection.find_one({"user_id": current_user["id"]})
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+
+    # Get all appointments for this doctor
+    appointments = await appointments_collection.find({"doctor_id": doctor["id"]}).to_list(length=None)
+
+    # Get unique patient IDs and their last appointment date
+    patient_data = {}
+    for appointment in appointments:
+        patient_id = appointment["patient_id"]
+        appointment_date = appointment["date"]
+
+        if patient_id not in patient_data:
+            patient_data[patient_id] = appointment_date
+        else:
+            # Keep the most recent appointment date
+            if appointment_date > patient_data[patient_id]:
+                patient_data[patient_id] = appointment_date
+
+    # Fetch patient details
+    patients = []
+    for patient_id, last_appointment_date in patient_data.items():
+        user = await users_collection.find_one({"id": patient_id})
+        if user:
+            patients.append(PatientInfo(
+                id=user["id"],
+                name=user.get("full_name", "Unknown"),
+                email=user.get("email", ""),
+                phone=user.get("phone", ""),
+                last_appointment_date=last_appointment_date
+            ))
+
+    # Sort by last appointment date (most recent first)
+    patients.sort(key=lambda p: p.last_appointment_date or "", reverse=True)
+
+    return patients
+
+@app.get("/doctors/me/schedule", response_model=List[AppointmentWithPatient])
+async def get_doctor_schedule(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    status: Optional[str] = None,
+    current_user = Depends(check_doctor_role)
+):
+    """Get appointments for the current doctor within a date range"""
+    doctors_collection = get_doctors_collection()
+    appointments_collection = get_appointments_collection()
+    users_collection = get_users_collection()
+
+    # Get doctor profile
+    doctor = await doctors_collection.find_one({"user_id": current_user["id"]})
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor profile not found")
+
+    # Build query
+    query = {"doctor_id": doctor["id"]}
+
+    # Add date range filter
+    if start_date or end_date:
+        date_filter = {}
+        if start_date:
+            date_filter["$gte"] = start_date
+        if end_date:
+            date_filter["$lte"] = end_date
+        query["date"] = date_filter
+
+    # Add status filter
+    if status:
+        query["status"] = status
+
+    # Get appointments
+    appointments = await appointments_collection.find(query).to_list(length=None)
+
+    # Enrich with patient information
+    enriched_appointments = []
+    for appointment in appointments:
+        patient = await users_collection.find_one({"id": appointment["patient_id"]})
+        patient_info = None
+        if patient:
+            patient_info = {
+                "id": patient["id"],
+                "name": patient.get("full_name", "Unknown"),
+                "email": patient.get("email", ""),
+                "phone": patient.get("phone", "")
+            }
+
+        enriched_appointments.append(AppointmentWithPatient(
+            id=appointment["id"],
+            doctor_id=appointment["doctor_id"],
+            patient_id=appointment["patient_id"],
+            date=appointment["date"],
+            time=appointment["time"],
+            reason=appointment["reason"],
+            status=appointment["status"],
+            created_at=appointment["created_at"],
+            patient=patient_info
+        ))
+
+    # Sort by date and time
+    enriched_appointments.sort(key=lambda a: (a.date, a.time))
+
+    return enriched_appointments
 
 # =============================================
 # HOSPITAL ENDPOINTS
