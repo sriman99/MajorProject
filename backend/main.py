@@ -698,6 +698,213 @@ async def upload_avatar(
 
     return {"avatar_url": avatar_url, "message": "Avatar uploaded successfully"}
 
+# =============================================
+# ADMIN ENDPOINTS
+# =============================================
+
+@app.get("/admin/stats")
+async def get_admin_stats(current_user = Depends(check_admin_role)):
+    """Get admin dashboard statistics"""
+    users_collection = get_users_collection()
+    doctors_collection = get_doctors_collection()
+    appointments_collection = get_appointments_collection()
+
+    # Count total users
+    total_users = await users_collection.count_documents({})
+
+    # Count total doctors
+    total_doctors = await doctors_collection.count_documents({})
+
+    # Count total patients (users with role='user')
+    total_patients = await users_collection.count_documents({"role": "user"})
+
+    # Count total appointments
+    total_appointments = await appointments_collection.count_documents({})
+
+    # Count appointments by status
+    pending_appointments = await appointments_collection.count_documents({"status": "pending"})
+    confirmed_appointments = await appointments_collection.count_documents({"status": "confirmed"})
+    completed_appointments = await appointments_collection.count_documents({"status": "completed"})
+    cancelled_appointments = await appointments_collection.count_documents({"status": "cancelled"})
+
+    # Calculate system health (based on active users)
+    active_users = await users_collection.count_documents({"is_active": True})
+    system_health = round((active_users / total_users * 100) if total_users > 0 else 100, 2)
+
+    return {
+        "total_users": total_users,
+        "total_doctors": total_doctors,
+        "total_patients": total_patients,
+        "total_appointments": total_appointments,
+        "pending_appointments": pending_appointments,
+        "confirmed_appointments": confirmed_appointments,
+        "completed_appointments": completed_appointments,
+        "cancelled_appointments": cancelled_appointments,
+        "active_appointments": pending_appointments + confirmed_appointments,
+        "system_health": system_health
+    }
+
+@app.get("/admin/users")
+async def get_admin_users(
+    skip: int = 0,
+    limit: int = 100,
+    role: Optional[str] = None,
+    search: Optional[str] = None,
+    current_user = Depends(check_admin_role)
+):
+    """Get all users with pagination and filtering"""
+    users_collection = get_users_collection()
+
+    # Build query
+    query = {}
+    if role:
+        query["role"] = role
+    if search:
+        # Search by name or email
+        query["$or"] = [
+            {"full_name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}}
+        ]
+
+    # Get total count
+    total = await users_collection.count_documents(query)
+
+    # Get users with pagination
+    users = await users_collection.find(query).skip(skip).limit(limit).to_list(length=None)
+
+    users_response = [
+        {
+            "id": user["id"],
+            "email": user["email"],
+            "full_name": user["full_name"],
+            "phone": user["phone"],
+            "role": user["role"],
+            "is_active": user.get("is_active", True),
+            "username": user.get("username", user["email"]),
+            "avatar_url": user.get("avatar_url")
+        } for user in users
+    ]
+
+    return {
+        "users": users_response,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
+@app.put("/admin/users/{user_id}/status")
+async def update_user_status(
+    user_id: str,
+    is_active: bool,
+    current_user = Depends(check_admin_role)
+):
+    """Activate or deactivate a user account"""
+    users_collection = get_users_collection()
+
+    # Check if user exists
+    user = await users_collection.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Prevent admin from deactivating themselves
+    if user_id == current_user["id"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot modify your own account status"
+        )
+
+    # Update user status
+    await users_collection.update_one(
+        {"id": user_id},
+        {"$set": {"is_active": is_active}}
+    )
+
+    return {
+        "message": f"User {'activated' if is_active else 'deactivated'} successfully",
+        "user_id": user_id,
+        "is_active": is_active
+    }
+
+@app.delete("/admin/users/{user_id}")
+async def delete_user(user_id: str, current_user = Depends(check_admin_role)):
+    """Soft delete a user (set is_active to false)"""
+    users_collection = get_users_collection()
+
+    # Check if user exists
+    user = await users_collection.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Prevent admin from deleting themselves
+    if user_id == current_user["id"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete your own account"
+        )
+
+    # Soft delete (set is_active to false)
+    await users_collection.update_one(
+        {"id": user_id},
+        {"$set": {"is_active": False}}
+    )
+
+    return {
+        "message": "User deleted successfully",
+        "user_id": user_id
+    }
+
+@app.get("/admin/appointments")
+async def get_admin_appointments(
+    skip: int = 0,
+    limit: int = 50,
+    status: Optional[str] = None,
+    current_user = Depends(check_admin_role)
+):
+    """Get all appointments with pagination and filtering"""
+    appointments_collection = get_appointments_collection()
+    users_collection = get_users_collection()
+    doctors_collection = get_doctors_collection()
+
+    # Build query
+    query = {}
+    if status:
+        query["status"] = status
+
+    # Get total count
+    total = await appointments_collection.count_documents(query)
+
+    # Get appointments with pagination, sorted by date (most recent first)
+    appointments = await appointments_collection.find(query).sort("created_at", -1).skip(skip).limit(limit).to_list(length=None)
+
+    # Enrich appointments with user and doctor info
+    enriched_appointments = []
+    for appointment in appointments:
+        # Get patient info
+        patient = await users_collection.find_one({"id": appointment["patient_id"]})
+
+        # Get doctor info
+        doctor = await doctors_collection.find_one({"id": appointment["doctor_id"]})
+
+        enriched_appointments.append({
+            "id": appointment["id"],
+            "doctor_id": appointment["doctor_id"],
+            "doctor_name": doctor["name"] if doctor else "Unknown",
+            "patient_id": appointment["patient_id"],
+            "patient_name": patient["full_name"] if patient else "Unknown",
+            "date": appointment["date"],
+            "time": appointment["time"],
+            "reason": appointment["reason"],
+            "status": appointment["status"],
+            "created_at": appointment["created_at"]
+        })
+
+    return {
+        "appointments": enriched_appointments,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
+
 @app.get("/users", response_model=List[User])
 async def get_all_users(current_user = Depends(check_admin_role)):
     users_collection = get_users_collection()

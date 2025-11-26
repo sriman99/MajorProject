@@ -249,6 +249,100 @@ export const usersApi = {
 };
 
 // =============================================
+// ADMIN API
+// =============================================
+
+export interface AdminStats {
+  total_users: number;
+  total_doctors: number;
+  total_patients: number;
+  total_appointments: number;
+  pending_appointments: number;
+  confirmed_appointments: number;
+  completed_appointments: number;
+  cancelled_appointments: number;
+  active_appointments: number;
+  system_health: number;
+}
+
+export interface AdminUsersResponse {
+  users: User[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface AdminUsersParams {
+  skip?: number;
+  limit?: number;
+  role?: string;
+  search?: string;
+}
+
+export interface EnrichedAppointment {
+  id: string;
+  doctor_id: string;
+  doctor_name: string;
+  patient_id: string;
+  patient_name: string;
+  date: string;
+  time: string;
+  reason: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  created_at: string;
+}
+
+export interface AdminAppointmentsResponse {
+  appointments: EnrichedAppointment[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface AdminAppointmentsParams {
+  skip?: number;
+  limit?: number;
+  status?: string;
+}
+
+export const adminApi = {
+  // Get admin dashboard statistics
+  getStats: async (): Promise<AdminStats> => {
+    const response = await apiClient.get('/admin/stats');
+    return response.data;
+  },
+
+  // Get all users with pagination and filtering
+  getUsers: async (params?: AdminUsersParams): Promise<AdminUsersResponse> => {
+    const response = await apiClient.get('/admin/users', { params });
+    return response.data;
+  },
+
+  // Update user status (activate/deactivate)
+  updateUserStatus: async (
+    userId: string,
+    isActive: boolean
+  ): Promise<{ message: string; user_id: string; is_active: boolean }> => {
+    const response = await apiClient.put(`/admin/users/${userId}/status`, null, {
+      params: { is_active: isActive },
+    });
+    return response.data;
+  },
+
+  // Delete user (soft delete)
+  deleteUser: async (userId: string): Promise<{ message: string; user_id: string }> => {
+    const response = await apiClient.delete(`/admin/users/${userId}`);
+    return response.data;
+  },
+
+  // Get all appointments with pagination and filtering
+  getAppointments: async (params?: AdminAppointmentsParams): Promise<AdminAppointmentsResponse> => {
+    const response = await apiClient.get('/admin/appointments', { params });
+    return response.data;
+  },
+};
+
+// =============================================
 // HOSPITALS API
 // =============================================
 
