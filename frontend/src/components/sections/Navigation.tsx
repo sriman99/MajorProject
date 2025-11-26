@@ -5,6 +5,7 @@ import { UserCircle, LogOut, Stethoscope, Calendar, MessageCircle } from "lucide
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "react-hot-toast"
 import { useUserRole } from "@/hooks/useUserRole"
+import { NotificationCenter } from "../NotificationCenter"
 
 export function Navigation() {
   const navigate = useNavigate()
@@ -97,6 +98,7 @@ export function Navigation() {
         <div className="flex items-center space-x-4">
           {isLoggedIn ? (
             <>
+              <NotificationCenter />
               <Button
                 variant="ghost"
                 className="text-[#1a2352] hover:text-[#ff7757] transition-colors"

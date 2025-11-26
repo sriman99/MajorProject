@@ -490,5 +490,51 @@ export const authApi = {
   },
 };
 
+// =============================================
+// NOTIFICATIONS API
+// =============================================
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: 'appointment' | 'message' | 'alert' | 'success';
+  link?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface NotificationsResponse {
+  notifications: Notification[];
+  unread_count: number;
+}
+
+export const notificationsApi = {
+  // Get all notifications for current user
+  getAll: async (): Promise<NotificationsResponse> => {
+    const response = await apiClient.get('/notifications');
+    return response.data;
+  },
+
+  // Mark notification as read
+  markAsRead: async (notificationId: string): Promise<{ message: string; notification_id: string }> => {
+    const response = await apiClient.put(`/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  // Mark all notifications as read
+  markAllAsRead: async (): Promise<{ message: string; count: number }> => {
+    const response = await apiClient.put('/notifications/read-all');
+    return response.data;
+  },
+
+  // Delete notification
+  delete: async (notificationId: string): Promise<{ message: string; notification_id: string }> => {
+    const response = await apiClient.delete(`/notifications/${notificationId}`);
+    return response.data;
+  },
+};
+
 // Export the axios instance for custom requests
 export default apiClient;

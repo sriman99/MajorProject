@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useAuthWithFetch } from "@/hooks/useAuth"
 import { LogOut, User, Settings, Home, Calendar } from "lucide-react"
+import { NotificationCenter } from "../NotificationCenter"
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -33,6 +34,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="text-sm text-gray-600">
               Welcome, <span className="font-medium">{user?.full_name || 'User'}</span>
             </div>
+            <NotificationCenter />
             <Button size="sm" variant="ghost" onClick={() => navigate('/')}>
               <Home className="h-4 w-4 mr-2" />
               Home
