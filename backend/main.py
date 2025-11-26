@@ -31,6 +31,12 @@ from database import (
     get_appointments_collection,
     get_analysis_collection
 )
+from email_service import (
+    send_welcome_email,
+    send_appointment_confirmation,
+    send_appointment_cancellation
+)
+from appointment_scheduler import scheduler
 
 # Load environment variables
 load_dotenv()
@@ -70,9 +76,13 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_db_client():
     await connect_to_mongo()
+    # Start appointment reminder scheduler
+    await scheduler.start()
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    # Stop appointment reminder scheduler
+    await scheduler.stop()
     await close_mongo_connection()
 
 # =============================================
@@ -397,6 +407,13 @@ async def signup(request: Request, user: UserCreate):
         doctor_dict["locations"] = []
         doctor_dict["timings"] = {"hours": "", "days": ""}
         await doctors_collection.insert_one(doctor_dict)
+
+    # Send welcome email (non-blocking)
+    try:
+        send_welcome_email(user_dict["email"], user_dict["full_name"])
+    except Exception as e:
+        # Log error but don't block signup
+        print(f"Failed to send welcome email: {str(e)}")
 
     return User(
         id=user_dict["id"],
@@ -747,6 +764,7 @@ async def create_appointment(
 ):
     doctors_collection = get_doctors_collection()
     appointments_collection = get_appointments_collection()
+    hospitals_collection = get_hospitals_collection()
 
     # Check if doctor exists
     doctor = await doctors_collection.find_one({"id": appointment.doctor_id})
@@ -771,6 +789,31 @@ async def create_appointment(
     appointment_dict["created_at"] = datetime.utcnow().isoformat()
 
     await appointments_collection.insert_one(appointment_dict)
+
+    # Send appointment confirmation email
+    try:
+        # Get hospital details
+        hospital_name = "N/A"
+        if doctor.get("locations") and len(doctor["locations"]) > 0:
+            hospital_id = doctor["locations"][0].get("hospital_id")
+            if hospital_id:
+                hospital = await hospitals_collection.find_one({"id": hospital_id})
+                if hospital:
+                    hospital_name = hospital.get("name", "N/A")
+
+        appointment_details = {
+            "patient_name": current_user.get("full_name", "Patient"),
+            "doctor_name": doctor.get("name", "Unknown Doctor"),
+            "appointment_date": appointment_dict["date"],
+            "appointment_time": appointment_dict["time"],
+            "hospital_name": hospital_name,
+            "appointment_id": appointment_dict["id"]
+        }
+
+        send_appointment_confirmation(current_user["email"], appointment_details)
+    except Exception as e:
+        # Log error but don't block appointment creation
+        print(f"Failed to send appointment confirmation email: {str(e)}")
 
     return Appointment(
         id=appointment_dict["id"],
@@ -820,6 +863,8 @@ async def update_appointment(
 ):
     doctors_collection = get_doctors_collection()
     appointments_collection = get_appointments_collection()
+    hospitals_collection = get_hospitals_collection()
+    users_collection = get_users_collection()
 
     # Check if appointment exists
     appointment = await appointments_collection.find_one({"id": appointment_id})
@@ -841,6 +886,36 @@ async def update_appointment(
     )
 
     updated_appointment = await appointments_collection.find_one({"id": appointment_id})
+
+    # Send cancellation email if status changed to cancelled
+    if status == "cancelled" and appointment.get("status") != "cancelled":
+        try:
+            # Get patient, doctor, and hospital details
+            patient = await users_collection.find_one({"id": appointment["patient_id"]})
+            doctor = await doctors_collection.find_one({"id": appointment["doctor_id"]})
+
+            hospital_name = "N/A"
+            if doctor and doctor.get("locations") and len(doctor["locations"]) > 0:
+                hospital_id = doctor["locations"][0].get("hospital_id")
+                if hospital_id:
+                    hospital = await hospitals_collection.find_one({"id": hospital_id})
+                    if hospital:
+                        hospital_name = hospital.get("name", "N/A")
+
+            if patient and doctor:
+                appointment_details = {
+                    "patient_name": patient.get("full_name", "Patient"),
+                    "doctor_name": doctor.get("name", "Unknown Doctor"),
+                    "appointment_date": appointment["date"],
+                    "appointment_time": appointment["time"],
+                    "hospital_name": hospital_name,
+                    "appointment_id": appointment["id"]
+                }
+
+                send_appointment_cancellation(patient["email"], appointment_details)
+        except Exception as e:
+            # Log error but don't block update
+            print(f"Failed to send cancellation email: {str(e)}")
 
     return Appointment(
         id=updated_appointment["id"],
@@ -946,6 +1021,7 @@ async def analyze_audio(
 async def get_analysis(current_user = Depends(get_current_active_user)):
     analysis_collection = get_analysis_collection()
     analyses = await analysis_collection.find({"user_id": current_user["id"]}).to_list(length=None)
+
 
     return [
         Analysis(
