@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, MessageCircle, Video, User, Settings, FileText, Stethoscope, Clock, Users, Activity, TrendingUp, AlertCircle, CheckCircle2, XCircle, Bell, Plus, Search, Filter, X } from "lucide-react"
+import { LayoutDashboard, Calendar, MessageCircle, Video, User, Settings, FileText, Stethoscope, Clock, Users, Activity, TrendingUp, AlertCircle, CheckCircle2, XCircle, Bell, Plus, Search, Filter, X, RefreshCw } from "lucide-react"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,159 +10,101 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuthWithFetch } from "@/hooks/useAuth"
 import { Skeleton } from "@/components/ui/skeleton"
-import axios from "axios"
 import { toast } from "sonner"
-
-// Define interfaces
-interface Appointment {
-  id: string
-  doctor_id: string
-  patient_id: string
-  date: string
-  time: string
-  reason: string
-  status: string
-  created_at: string
-  patient?: {
-    name: string
-  }
-}
+import { doctorsApi, appointmentsApi, DoctorStats, PatientInfo, AppointmentWithPatient } from "@/services/api"
 
 export default function DoctorDashboard() {
   const navigate = useNavigate()
   const { user, loading: userLoading, error: userError } = useAuthWithFetch()
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [showSchedule, setShowSchedule] = useState(false)
-  const [showAddPatient, setShowAddPatient] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterPriority, setFilterPriority] = useState("all")
-  const [newPatient, setNewPatient] = useState({
-    name: "",
-    condition: "",
-    status: "Stable",
-    nextAppointment: ""
-  })
-  
+  const [filterStatus, setFilterStatus] = useState("all")
+
   // State for API data
-  const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([])
-  const [todaysAppointments, setTodaysAppointments] = useState<Appointment[]>([])
+  const [stats, setStats] = useState<DoctorStats | null>(null)
+  const [todaysAppointments, setTodaysAppointments] = useState<AppointmentWithPatient[]>([])
+  const [filteredAppointments, setFilteredAppointments] = useState<AppointmentWithPatient[]>([])
+  const [recentPatients, setRecentPatients] = useState<PatientInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [dashboardStats, setDashboardStats] = useState({
-    todaysAppointments: 0,
-    activePatients: 0,
-    consultationTime: 0,
-    patientSatisfaction: 95
-  })
+  const [refreshing, setRefreshing] = useState(false)
 
   // Fetch appointment data
-  const fetchDoctorData = async () => {
+  const fetchDoctorData = async (showToast = false) => {
     try {
-      setLoading(true)
-      setError(null)
-      const token = localStorage.getItem('access_token')
-      
-      if (!token) {
-        setError("Authentication token missing. Please log in again.")
-        return
+      if (showToast) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
       }
-      
-      // Fetch appointments
-      const appointmentsResponse = await axios.get('http://localhost:8000/appointments', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-      
-      // Process appointments
-      const allAppointments = appointmentsResponse.data;
-      setAppointments(allAppointments)
-      
-      // Get today's date in the format used by the API (YYYY-MM-DD)
+      setError(null)
+
+      // Get today's date
       const today = new Date().toISOString().split('T')[0]
-      
-      // Filter appointments for today
-      const appointmentsToday = allAppointments.filter(
-        (app: Appointment) => app.date === today
-      )
-      
-      setTodaysAppointments(appointmentsToday)
-      setFilteredAppointments(appointmentsToday)
-      
-      // Calculate dashboard stats
-      const confirmed = allAppointments.filter(
-        (app: Appointment) => app.status === 'confirmed'
-      ).length
-      
-      const completed = allAppointments.filter(
-        (app: Appointment) => app.status === 'completed'
-      ).length
-      
-      // Get unique patient count
-      const uniquePatients = new Set(
-        allAppointments.map((app: Appointment) => app.patient_id)
-      )
-      
-      // Estimate consultation time (30 mins per appointment)
-      const estimatedTime = Math.round((appointmentsToday.length * 30) / 60 * 10) / 10
-      
-      setDashboardStats({
-        todaysAppointments: appointmentsToday.length,
-        activePatients: uniquePatients.size,
-        consultationTime: estimatedTime,
-        patientSatisfaction: 95 // This would ideally come from a real rating system
-      })
-      
+
+      // Fetch all data in parallel
+      const [statsData, scheduleData, patientsData] = await Promise.all([
+        doctorsApi.getMyStats(),
+        doctorsApi.getMySchedule(today, today), // Get today's appointments
+        doctorsApi.getMyPatients()
+      ])
+
+      // Update state
+      setStats(statsData)
+      setTodaysAppointments(scheduleData)
+      setFilteredAppointments(scheduleData)
+      setRecentPatients(patientsData.slice(0, 5)) // Show only top 5 recent patients
+
+      if (showToast) {
+        toast.success('Dashboard refreshed successfully')
+      }
     } catch (err) {
       console.error('Error fetching doctor data:', err)
-      setError('Failed to load doctor data. Please try again.')
-      toast.error('Failed to load doctor data')
+      const errorMessage = 'Failed to load doctor data. Please try again.'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
+  // Refresh data
+  const handleRefresh = () => {
+    fetchDoctorData(true)
+  }
+
   useEffect(() => {
-    if (user) {
+    if (user && user.role === 'doctor') {
       fetchDoctorData()
     }
   }, [user])
 
   useEffect(() => {
-    // Filter appointments based on search query
+    // Filter appointments based on search query and status
     if (todaysAppointments.length) {
       const filtered = todaysAppointments.filter(appointment => {
         // Check if patient info exists and matches search
         const patientName = appointment.patient?.name || '';
-        const patientId = appointment.patient_id || '';
         const reason = appointment.reason || '';
-        
-        const matchesSearch = 
+
+        const matchesSearch =
           patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          patientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
           reason.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        // For priority filtering, we would need to add priority to the API response
-        // Here we'll just use a basic filter on status for demo
-        const matchesPriority = filterPriority === "all" || (
-          filterPriority === "urgent" ? appointment.status === "pending" :
-          filterPriority === "high" ? appointment.status === "confirmed" :
-          true
-        );
-        
-        return matchesSearch && matchesPriority;
+
+        // Filter by status
+        const matchesStatus = filterStatus === "all" || appointment.status === filterStatus;
+
+        return matchesSearch && matchesStatus;
       })
       setFilteredAppointments(filtered)
     }
-  }, [searchQuery, filterPriority, todaysAppointments])
+  }, [searchQuery, filterStatus, todaysAppointments])
 
-  const handleStartConsultation = (appointment: Appointment) => {
-    // Here you would start a consultation
+  const handleStartConsultation = (appointment: AppointmentWithPatient) => {
     console.log("Starting consultation for:", appointment)
     navigate(`/doctor/consultation/${appointment.id}`)
   }
-  
+
   const handleViewSchedule = () => {
     navigate("/appointments/manage")
   }
@@ -173,6 +115,18 @@ export default function DoctorDashboard() {
 
   const handleManageAppointments = () => {
     navigate("/appointments/manage")
+  }
+
+  const handleUpdateAppointmentStatus = async (appointmentId: string, status: 'confirmed' | 'completed' | 'cancelled') => {
+    try {
+      await appointmentsApi.updateStatus(appointmentId, status)
+      toast.success(`Appointment ${status} successfully`)
+      // Refresh data
+      await fetchDoctorData()
+    } catch (err) {
+      console.error('Error updating appointment:', err)
+      toast.error('Failed to update appointment')
+    }
   }
 
   if (userLoading || loading) {
@@ -234,42 +188,43 @@ export default function DoctorDashboard() {
   const languages = user?.doctor_profile?.languages || []
   const qualifications = user?.doctor_profile?.qualifications || "Not specified"
   const name = user?.full_name || user?.doctor_profile?.name || "Doctor"
-  
+
+  // Estimate consultation time (30 mins per appointment)
+  const estimatedTime = stats ? Math.round((stats.todays_appointments * 30) / 60 * 10) / 10 : 0
+
   // Generate stats data from real data
-  const stats = [
-    { 
-      title: "Today's Appointments", 
-      value: String(dashboardStats.todaysAppointments), 
-      change: "+2", 
+  const statsCards = [
+    {
+      title: "Today's Appointments",
+      value: String(stats?.todays_appointments || 0),
+      change: "+2",
       icon: Calendar,
       color: "text-blue-500",
       bgColor: "bg-blue-50"
     },
-    { 
-      title: "Active Patients", 
-      value: String(dashboardStats.activePatients), 
-      change: "+5", 
+    {
+      title: "Total Patients",
+      value: String(stats?.total_patients || 0),
+      change: "+5",
       icon: Users,
       color: "text-green-500",
       bgColor: "bg-green-50"
     },
-    { 
-      title: "Consultation Time", 
-      value: String(dashboardStats.consultationTime), 
-      unit: "hrs", 
-      change: "-0.5", 
+    {
+      title: "Pending Appointments",
+      value: String(stats?.pending_appointments || 0),
+      change: "-3",
       icon: Clock,
-      color: "text-purple-500",
-      bgColor: "bg-purple-50"
-    },
-    { 
-      title: "Patient Satisfaction", 
-      value: String(dashboardStats.patientSatisfaction), 
-      unit: "%", 
-      change: "+2", 
-      icon: TrendingUp,
       color: "text-orange-500",
       bgColor: "bg-orange-50"
+    },
+    {
+      title: "Completed This Week",
+      value: String(stats?.completed_this_week || 0),
+      change: "+8",
+      icon: CheckCircle2,
+      color: "text-purple-500",
+      bgColor: "bg-purple-50"
     },
   ]
 
@@ -283,14 +238,22 @@ export default function DoctorDashboard() {
             <p className="text-muted-foreground">Here's your practice overview</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button
+              variant="outline"
               onClick={handleViewSchedule}
             >
               <Calendar className="h-5 w-5 mr-2" />
               View Schedule
             </Button>
-            <Button 
+            <Button
               onClick={handleManageAppointments}
             >
               <Stethoscope className="h-5 w-5 mr-2" />
@@ -351,11 +314,11 @@ export default function DoctorDashboard() {
 
         {/* Stats Overview */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => {
+          {statsCards.map((stat) => {
             const Icon = stat.icon
             return (
-              <Card 
-                key={stat.title} 
+              <Card
+                key={stat.title}
                 className={`${stat.bgColor} hover:shadow-lg transition-all duration-300 cursor-pointer`}
               >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -387,15 +350,15 @@ export default function DoctorDashboard() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-[200px]"
                 />
-                <Select value={filterPriority} onValueChange={setFilterPriority}>
-                  <SelectTrigger className="w-[120px]">
-                    <SelectValue placeholder="Priority" />
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Filter Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -464,55 +427,50 @@ export default function DoctorDashboard() {
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Recent Patients</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => setShowAddPatient(true)}>
+              <Button variant="outline" size="sm" onClick={() => navigate('/appointments/book')}>
                 <Plus className="w-4 h-4 mr-2" />
-                Add Patient
+                New Appointment
               </Button>
             </CardHeader>
             <CardContent>
-              {appointments.length > 0 ? (
+              {recentPatients.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Show unique patients from appointments */}
-                  {Array.from(new Set(appointments.map(a => a.patient_id)))
-                    .slice(0, 5)
-                    .map((patientId, index) => {
-                      const patientAppointments = appointments.filter(a => a.patient_id === patientId);
-                      const latestAppointment = patientAppointments.sort(
-                        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-                      )[0];
-                      
-                      return (
-                        <div
-                          key={patientId}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
-                          onClick={() => handleViewPatient(patientId)}
-                        >
-                          <div>
-                            <h3 className="font-medium group-hover:text-primary transition-colors">
-                              {latestAppointment.patient?.name || `Patient ${index + 1}`}
-                            </h3>
-                            <p className="text-sm text-gray-500">{latestAppointment.reason}</p>
-                          </div>
-                          <div className="text-right">
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              latestAppointment.status === "completed" 
-                                ? "bg-green-100 text-green-800" 
-                                : "bg-blue-100 text-blue-800"
-                            }`}>
-                              {latestAppointment.status}
-                            </span>
-                            <p className="text-xs text-gray-500 mt-1">
-                              Last visit: {new Date(latestAppointment.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  {recentPatients.map((patient, index) => (
+                    <div
+                      key={patient.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
+                      onClick={() => handleViewPatient(patient.id)}
+                    >
+                      <div>
+                        <h3 className="font-medium group-hover:text-primary transition-colors">
+                          {patient.name}
+                        </h3>
+                        <p className="text-sm text-gray-500">{patient.email}</p>
+                        <p className="text-xs text-gray-400">{patient.phone}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 font-medium">Last visit:</p>
+                        <p className="text-sm text-gray-700">
+                          {patient.last_appointment_date
+                            ? new Date(patient.last_appointment_date).toLocaleDateString()
+                            : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-40">
                   <Users className="h-10 w-10 text-gray-400 mb-4" />
                   <p className="text-gray-500">No patients found</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => navigate('/appointments/book')}
+                  >
+                    Book First Appointment
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -520,67 +478,6 @@ export default function DoctorDashboard() {
         </div>
       </div>
 
-      {/* Add Patient Dialog */}
-      <Dialog open={showAddPatient} onOpenChange={setShowAddPatient}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Patient</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Patient Name</label>
-              <Input
-                value={newPatient.name}
-                onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
-                placeholder="Enter patient name"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Condition</label>
-              <Input
-                value={newPatient.condition}
-                onChange={(e) => setNewPatient({ ...newPatient, condition: e.target.value })}
-                placeholder="Enter patient condition"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Status</label>
-              <Select
-                value={newPatient.status}
-                onValueChange={(value) => setNewPatient({ ...newPatient, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Stable">Stable</SelectItem>
-                  <SelectItem value="Improving">Improving</SelectItem>
-                  <SelectItem value="Critical">Critical</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Next Appointment</label>
-              <Input
-                type="date"
-                value={newPatient.nextAppointment}
-                onChange={(e) => setNewPatient({ ...newPatient, nextAppointment: e.target.value })}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAddPatient(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => {
-                toast.success("This feature would connect to the patient registration API");
-                setShowAddPatient(false);
-              }}>
-                Add Patient
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   )
 } 
