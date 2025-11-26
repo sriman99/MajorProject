@@ -437,6 +437,7 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
 @app.get("/users/me", response_model=UserWithDoctorProfile)
 async def read_users_me(current_user = Depends(get_current_active_user)):
     doctors_collection = get_doctors_collection()
+
     response = {
         "id": current_user["id"],
         "email": current_user["email"],
@@ -571,9 +572,7 @@ async def upload_avatar(
 @app.get("/users", response_model=List[User])
 async def get_all_users(current_user = Depends(check_admin_role)):
     users_collection = get_users_collection()
-    users = []
-    async for user in users_collection.find():
-        users.append(user)
+    users = await users_collection.find().to_list(length=None)
     return [
         User(
             id=user["id"],
@@ -593,11 +592,12 @@ async def get_all_users(current_user = Depends(check_admin_role)):
 
 @app.get("/doctors", response_model=List[Doctor])
 async def get_doctors(specialty: Optional[str] = None):
+    doctors_collection = get_doctors_collection()
     query = {}
     if specialty:
         query["specialties"] = specialty
-    
-    doctors = list(doctors_collection.find(query))
+
+    doctors = await doctors_collection.find(query).to_list(length=None)
     return [
         Doctor(
             id=doctor["id"],
@@ -615,10 +615,11 @@ async def get_doctors(specialty: Optional[str] = None):
 
 @app.get("/doctors/{doctor_id}", response_model=Doctor)
 async def get_doctor(doctor_id: str):
-    doctor = doctors_collection.find_one({"id": doctor_id})
+    doctors_collection = get_doctors_collection()
+    doctor = await doctors_collection.find_one({"id": doctor_id})
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
-    
+
     return Doctor(
         id=doctor["id"],
         name=doctor["name"],
@@ -634,31 +635,33 @@ async def get_doctor(doctor_id: str):
 
 @app.put("/doctors/{doctor_id}", response_model=Doctor)
 async def update_doctor(
-    doctor_id: str, 
+    doctor_id: str,
     doctor: DoctorCreate,
     current_user = Depends(check_doctor_role)
 ):
+    doctors_collection = get_doctors_collection()
+
     # Check if doctor exists
-    existing_doctor = doctors_collection.find_one({"id": doctor_id})
+    existing_doctor = await doctors_collection.find_one({"id": doctor_id})
     if not existing_doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
-    
+
     # Check if the current user is the doctor or an admin
     if current_user["role"] != "admin" and existing_doctor["user_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to update this doctor")
-    
+
     # Update doctor
     doctor_dict = doctor.dict()
     doctor_dict["user_id"] = existing_doctor["user_id"]
     doctor_dict["id"] = doctor_id
     doctor_dict["locations"] = existing_doctor["locations"]
     doctor_dict["timings"] = existing_doctor["timings"]
-    
-    doctors_collection.update_one(
+
+    await doctors_collection.update_one(
         {"id": doctor_id},
         {"$set": doctor_dict}
     )
-    
+
     return Doctor(
         id=doctor_dict["id"],
         name=doctor_dict["name"],
@@ -674,10 +677,11 @@ async def update_doctor(
 
 @app.get("/doctors/me", response_model=Doctor)
 async def get_my_doctor_profile(current_user = Depends(check_doctor_role)):
-    doctor = doctors_collection.find_one({"user_id": current_user["id"]})
+    doctors_collection = get_doctors_collection()
+    doctor = await doctors_collection.find_one({"user_id": current_user["id"]})
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor profile not found")
-    
+
     return Doctor(
         id=doctor["id"],
         name=doctor["name"],
@@ -697,7 +701,8 @@ async def get_my_doctor_profile(current_user = Depends(check_doctor_role)):
 
 @app.get("/hospitals", response_model=List[Hospital])
 async def get_hospitals():
-    hospitals = list(hospitals_collection.find())
+    hospitals_collection = get_hospitals_collection()
+    hospitals = await hospitals_collection.find().to_list(length=None)
     return [
         Hospital(
             id=hospital["id"],
@@ -714,10 +719,11 @@ async def get_hospitals():
 
 @app.get("/hospitals/{hospital_id}", response_model=Hospital)
 async def get_hospital(hospital_id: str):
-    hospital = hospitals_collection.find_one({"id": hospital_id})
+    hospitals_collection = get_hospitals_collection()
+    hospital = await hospitals_collection.find_one({"id": hospital_id})
     if not hospital:
         raise HTTPException(status_code=404, detail="Hospital not found")
-    
+
     return Hospital(
         id=hospital["id"],
         name=hospital["name"],
@@ -739,30 +745,33 @@ async def create_appointment(
     appointment: AppointmentCreate,
     current_user = Depends(get_current_active_user)
 ):
+    doctors_collection = get_doctors_collection()
+    appointments_collection = get_appointments_collection()
+
     # Check if doctor exists
-    doctor = doctors_collection.find_one({"id": appointment.doctor_id})
+    doctor = await doctors_collection.find_one({"id": appointment.doctor_id})
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
-    
+
     # Check for conflicting appointments
-    existing_appointments = appointments_collection.find_one({
+    existing_appointments = await appointments_collection.find_one({
         "doctor_id": appointment.doctor_id,
         "date": appointment.date,
         "time": appointment.time,
         "status": {"$ne": "cancelled"}  # Exclude cancelled appointments
     })
-    
+
     if existing_appointments:
         raise HTTPException(status_code=400, detail="Appointment time is already booked for this doctor.")
-    
+
     # Create appointment
     appointment_dict = appointment.dict()
     appointment_dict["id"] = str(uuid.uuid4())
     appointment_dict["patient_id"] = current_user["id"]
     appointment_dict["created_at"] = datetime.utcnow().isoformat()
-    
-    appointments_collection.insert_one(appointment_dict)
-    
+
+    await appointments_collection.insert_one(appointment_dict)
+
     return Appointment(
         id=appointment_dict["id"],
         doctor_id=appointment_dict["doctor_id"],
@@ -776,17 +785,20 @@ async def create_appointment(
 
 @app.get("/appointments", response_model=List[Appointment])
 async def get_appointments(current_user = Depends(get_current_active_user)):
+    doctors_collection = get_doctors_collection()
+    appointments_collection = get_appointments_collection()
+
     # If user is a doctor, get appointments for that doctor
     if current_user["role"] == "doctor":
-        doctor = doctors_collection.find_one({"user_id": current_user["id"]})
+        doctor = await doctors_collection.find_one({"user_id": current_user["id"]})
         if not doctor:
             raise HTTPException(status_code=404, detail="Doctor profile not found")
-        
-        appointments = list(appointments_collection.find({"doctor_id": doctor["id"]}))
+
+        appointments = await appointments_collection.find({"doctor_id": doctor["id"]}).to_list(length=None)
     else:
         # If user is a patient, get appointments for that patient
-        appointments = list(appointments_collection.find({"patient_id": current_user["id"]}))
-    
+        appointments = await appointments_collection.find({"patient_id": current_user["id"]}).to_list(length=None)
+
     return [
         Appointment(
             id=appointment["id"],
@@ -806,27 +818,30 @@ async def update_appointment(
     status: Literal["pending", "confirmed", "cancelled", "completed"],
     current_user = Depends(get_current_active_user)
 ):
+    doctors_collection = get_doctors_collection()
+    appointments_collection = get_appointments_collection()
+
     # Check if appointment exists
-    appointment = appointments_collection.find_one({"id": appointment_id})
+    appointment = await appointments_collection.find_one({"id": appointment_id})
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
-    
+
     # Check if user is authorized to update the appointment
     if current_user["role"] == "doctor":
-        doctor = doctors_collection.find_one({"user_id": current_user["id"]})
+        doctor = await doctors_collection.find_one({"user_id": current_user["id"]})
         if not doctor or doctor["id"] != appointment["doctor_id"]:
             raise HTTPException(status_code=403, detail="Not authorized to update this appointment")
     elif current_user["role"] == "user" and appointment["patient_id"] != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to update this appointment")
-    
+
     # Update appointment
-    appointments_collection.update_one(
+    await appointments_collection.update_one(
         {"id": appointment_id},
         {"$set": {"status": status}}
     )
-    
-    updated_appointment = appointments_collection.find_one({"id": appointment_id})
-    
+
+    updated_appointment = await appointments_collection.find_one({"id": appointment_id})
+
     return Appointment(
         id=updated_appointment["id"],
         doctor_id=updated_appointment["doctor_id"],
@@ -847,6 +862,8 @@ async def upload_analysis(
     file: UploadFile = File(...),
     current_user = Depends(get_current_active_user)
 ):
+    analysis_collection = get_analysis_collection()
+
     # Validate file size
     await validate_file_size(file, MAX_FILE_SIZE)
 
@@ -857,7 +874,7 @@ async def upload_analysis(
     with open(file_path, "wb") as buffer:
         content = await file.read()
         buffer.write(content)
-    
+
     # In a real app, you would process the file here
     # For now, we'll just create a dummy analysis
     analysis_dict = {
@@ -874,9 +891,9 @@ async def upload_analysis(
         ],
         "created_at": datetime.utcnow().isoformat()
     }
-    
-    analysis_collection.insert_one(analysis_dict)
-    
+
+    await analysis_collection.insert_one(analysis_dict)
+
     return Analysis(
         id=analysis_dict["id"],
         user_id=analysis_dict["user_id"],
@@ -893,6 +910,8 @@ async def analyze_audio(
     background_tasks: BackgroundTasks,
     current_user = Depends(get_current_active_user)
 ):
+    analysis_collection = get_analysis_collection()
+
     # In a real app, you would process the audio here
     # For now, we'll just create a dummy analysis
     analysis_dict = {
@@ -909,9 +928,9 @@ async def analyze_audio(
         ],
         "created_at": datetime.utcnow().isoformat()
     }
-    
-    analysis_collection.insert_one(analysis_dict)
-    
+
+    await analysis_collection.insert_one(analysis_dict)
+
     return Analysis(
         id=analysis_dict["id"],
         user_id=analysis_dict["user_id"],
@@ -925,8 +944,9 @@ async def analyze_audio(
 
 @app.get("/analysis", response_model=List[Analysis])
 async def get_analysis(current_user = Depends(get_current_active_user)):
-    analyses = list(analysis_collection.find({"user_id": current_user["id"]}))
-    
+    analysis_collection = get_analysis_collection()
+    analyses = await analysis_collection.find({"user_id": current_user["id"]}).to_list(length=None)
+
     return [
         Analysis(
             id=analysis["id"],

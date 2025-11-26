@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Reminder</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Appointment Reminder</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="margin: 0 0 20px 0; color: #333333; font-size: 24px;">Hello {{patient_name}}!</h2>
+
+                            <p style="margin: 0 0 25px 0; color: #666666; font-size: 16px; line-height: 1.6;">
+                                This is a friendly reminder that you have an appointment in <strong style="color: #f59e0b;">{{reminder_text}}</strong>.
+                            </p>
+
+                            <!-- Appointment Details Card -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff7ed; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 25px;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <table width="100%" cellpadding="8" cellspacing="0">
+                                            <tr>
+                                                <td style="color: #666666; font-size: 15px; font-weight: 600; width: 140px;">Doctor:</td>
+                                                <td style="color: #333333; font-size: 15px;">{{doctor_name}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666666; font-size: 15px; font-weight: 600;">Date:</td>
+                                                <td style="color: #333333; font-size: 15px;">{{appointment_date}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666666; font-size: 15px; font-weight: 600;">Time:</td>
+                                                <td style="color: #333333; font-size: 15px;">{{appointment_time}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="color: #666666; font-size: 15px; font-weight: 600;">Hospital:</td>
+                                                <td style="color: #333333; font-size: 15px;">{{hospital_name}}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Preparation Tips -->
+                            <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin-bottom: 25px; border-radius: 4px;">
+                                <p style="margin: 0 0 10px 0; color: #1e40af; font-size: 15px; font-weight: 600;">
+                                    Preparation Tips:
+                                </p>
+                                <ul style="margin: 0; padding-left: 20px; color: #1e40af; font-size: 14px; line-height: 1.6;">
+                                    <li>Arrive 10 minutes early to complete check-in</li>
+                                    <li>Bring your ID and insurance information</li>
+                                    <li>Prepare a list of questions or symptoms to discuss</li>
+                                    <li>Bring any current medications or medical records</li>
+                                </ul>
+                            </div>
+
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{{appointments_url}}" style="display: inline-block; padding: 14px 30px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: 600;">
+                                    View Appointment Details
+                                </a>
+                            </div>
+
+                            <p style="margin: 0 0 15px 0; color: #666666; font-size: 14px; line-height: 1.6; font-style: italic;">
+                                Need to reschedule or cancel? Please do so as soon as possible through your account dashboard.
+                            </p>
+
+                            <p style="margin: 25px 0 0 0; color: #666666; font-size: 16px; line-height: 1.6;">
+                                Best regards,<br>
+                                <strong style="color: #f59e0b;">Healthcare Team</strong>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 20px 30px; text-align: center; border-top: 1px solid #e9ecef;">
+                            <p style="margin: 0; color: #999999; font-size: 14px;">
+                                &copy; {{current_year}} Healthcare System. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
