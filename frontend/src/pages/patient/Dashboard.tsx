@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, MessageCircle, Video, User, Settings, FileText, Activity, Heart, Thermometer, Stethoscope, Wind, ActivitySquare, Droplets, Brain, Plus } from "lucide-react"
+import { LayoutDashboard, Calendar, MessageCircle, Video, User, Settings, FileText, Activity, Heart, Thermometer, Stethoscope, Wind, ActivitySquare, Droplets, Brain, Plus, CreditCard } from "lucide-react"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -398,8 +398,15 @@ export default function PatientDashboard() {
             <p className="text-muted-foreground">Here's what's happening with your health today</p>
           </div>
           <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
+              onClick={() => navigate('/payments/history')}
+            >
+              <CreditCard className="h-5 w-5 mr-2" />
+              Payment History
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => navigate('/appointments/manage')}
             >
               <Calendar className="h-5 w-5 mr-2" />

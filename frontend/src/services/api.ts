@@ -490,5 +490,45 @@ export const authApi = {
   },
 };
 
+// =============================================
+// PAYMENTS API
+// =============================================
+
+export interface Payment {
+  id: string;
+  user_id: string;
+  appointment_id: string;
+  amount: number;
+  status: 'success' | 'pending' | 'failed';
+  payment_method: string;
+  created_at: string;
+}
+
+export interface PaymentCreate {
+  amount: number;
+  appointment_id: string;
+  payment_method: 'card' | 'upi' | 'netbanking';
+}
+
+export const paymentsApi = {
+  // Create payment
+  create: async (data: PaymentCreate): Promise<Payment> => {
+    const response = await apiClient.post('/payments', data);
+    return response.data;
+  },
+
+  // Get all payments for current user
+  getAll: async (): Promise<Payment[]> => {
+    const response = await apiClient.get('/payments');
+    return response.data;
+  },
+
+  // Get specific payment
+  getById: async (paymentId: string): Promise<Payment> => {
+    const response = await apiClient.get(`/payments/${paymentId}`);
+    return response.data;
+  },
+};
+
 // Export the axios instance for custom requests
 export default apiClient;

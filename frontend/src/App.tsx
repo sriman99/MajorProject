@@ -22,6 +22,8 @@ import AdminDashboard from './pages/admin/Dashboard'
 import AppointmentManagement from './pages/AppointmentManagement'
 import Contact from './pages/Contact'
 import Settings from './pages/Settings'
+import Payment from './pages/Payment'
+import PaymentHistory from './pages/PaymentHistory'
 import { ChatBot } from './components/chat/ChatBot'
 import { DoctorChat } from './components/chat/DoctorChat'
 import { useUserRole, getUserRole } from './hooks/useUserRole'
@@ -186,7 +188,19 @@ function AppLayout() {
         
         {/* Dashboard redirect */}
         <Route path="/dashboard" element={<DashboardRedirect />} />
-        
+
+        {/* Payment routes - accessible to all authenticated users */}
+        <Route path="/payment/:appointmentId" element={
+          <ProtectedRoute requiredRole={null}>
+            <Payment />
+          </ProtectedRoute>
+        } />
+        <Route path="/payments/history" element={
+          <ProtectedRoute requiredRole={null}>
+            <PaymentHistory />
+          </ProtectedRoute>
+        } />
+
         <Route path="/contact" element={<Contact />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

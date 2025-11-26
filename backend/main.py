@@ -30,7 +30,8 @@ from database import (
     get_doctors_collection,
     get_hospitals_collection,
     get_appointments_collection,
-    get_analysis_collection
+    get_analysis_collection,
+    get_payments_collection
 )
 from email_service import (
     send_welcome_email,
@@ -311,6 +312,23 @@ class AppointmentWithPatient(BaseModel):
     status: Literal["pending", "confirmed", "cancelled", "completed"]
     created_at: str
     patient: Optional[Dict[str, Any]] = None
+
+class PaymentCreate(BaseModel):
+    amount: float
+    appointment_id: str
+    payment_method: Literal["card", "upi", "netbanking"]
+
+class Payment(BaseModel):
+    id: str
+    user_id: str
+    appointment_id: str
+    amount: float
+    status: Literal["success", "pending", "failed"]
+    payment_method: str
+    created_at: str
+
+    class Config:
+        from_attributes = True
 
 # =============================================
 # HELPER FUNCTIONS
@@ -1658,6 +1676,91 @@ async def get_chat_history(
     # Load chat history
     messages = await ws_manager.load_chat_history(conversation_id, limit)
     return messages
+
+# =============================================
+# PAYMENT ENDPOINTS
+# =============================================
+
+@app.post("/payments", response_model=Payment)
+async def create_payment(
+    payment: PaymentCreate,
+    current_user = Depends(get_current_active_user)
+):
+    """Create a mock payment (instantly succeeds)"""
+    payments_collection = get_payments_collection()
+    appointments_collection = get_appointments_collection()
+
+    # Verify appointment exists and belongs to user
+    appointment = await appointments_collection.find_one({"id": payment.appointment_id})
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    if appointment["patient_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to pay for this appointment")
+
+    # Create payment record (mock - instantly successful)
+    payment_dict = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["id"],
+        "appointment_id": payment.appointment_id,
+        "amount": payment.amount,
+        "status": "success",
+        "payment_method": payment.payment_method,
+        "created_at": datetime.utcnow().isoformat()
+    }
+
+    await payments_collection.insert_one(payment_dict)
+
+    return Payment(
+        id=payment_dict["id"],
+        user_id=payment_dict["user_id"],
+        appointment_id=payment_dict["appointment_id"],
+        amount=payment_dict["amount"],
+        status=payment_dict["status"],
+        payment_method=payment_dict["payment_method"],
+        created_at=payment_dict["created_at"]
+    )
+
+@app.get("/payments", response_model=List[Payment])
+async def get_payments(current_user = Depends(get_current_active_user)):
+    """Get user's payment history"""
+    payments_collection = get_payments_collection()
+
+    payments = await payments_collection.find({"user_id": current_user["id"]}).sort("created_at", -1).to_list(length=None)
+
+    return [
+        Payment(
+            id=payment["id"],
+            user_id=payment["user_id"],
+            appointment_id=payment["appointment_id"],
+            amount=payment["amount"],
+            status=payment["status"],
+            payment_method=payment["payment_method"],
+            created_at=payment["created_at"]
+        ) for payment in payments
+    ]
+
+@app.get("/payments/{payment_id}", response_model=Payment)
+async def get_payment(payment_id: str, current_user = Depends(get_current_active_user)):
+    """Get payment details"""
+    payments_collection = get_payments_collection()
+
+    payment = await payments_collection.find_one({"id": payment_id})
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    if payment["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to view this payment")
+
+    return Payment(
+        id=payment["id"],
+        user_id=payment["user_id"],
+        appointment_id=payment["appointment_id"],
+        amount=payment["amount"],
+        status=payment["status"],
+        payment_method=payment["payment_method"],
+        created_at=payment["created_at"]
+    )
 
 # =============================================
 # ROOT ENDPOINT

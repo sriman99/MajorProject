@@ -48,3 +48,6 @@ def get_appointments_collection():
 
 def get_analysis_collection():
     return database.db.analysis
+
+def get_payments_collection():
+    return database.db.payments
