@@ -240,7 +240,7 @@ export default function Login() {
                   Remember me
                 </label>
               </div>
-              <a href="#" className="text-sm text-[#ff7757] hover:text-[#1a2352] transition-colors">
+              <a href="/forgot-password" className="text-sm text-[#ff7757] hover:text-[#1a2352] transition-colors">
                 Forgot password?
               </a>
             </motion.div>

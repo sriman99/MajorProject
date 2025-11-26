@@ -11,6 +11,7 @@ from pydantic import BaseModel, EmailStr, Field, validator
 import os
 from dotenv import load_dotenv
 import uuid
+import secrets
 import json
 from bson import ObjectId
 import httpx
@@ -243,6 +244,35 @@ class PasswordChange(BaseModel):
         return v
 
     @validator('confirm_new_password')
+    def passwords_match(cls, v, values):
+        if 'new_password' in values and v != values['new_password']:
+            raise ValueError('Passwords do not match')
+        return v
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+    confirm_password: str
+
+    @validator('new_password')
+    def password_strength(cls, v):
+        """Validate password strength"""
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        if not any(char.isdigit() for char in v):
+            raise ValueError('Password must contain at least one digit')
+        if not any(char.isupper() for char in v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        if not any(char.islower() for char in v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        if not any(char in '!@#$%^&*()_+-=[]{}|;:,.<>?' for char in v):
+            raise ValueError('Password must contain at least one special character')
+        return v
+
+    @validator('confirm_password')
     def passwords_match(cls, v, values):
         if 'new_password' in values and v != values['new_password']:
             raise ValueError('Passwords do not match')
@@ -524,6 +554,88 @@ async def change_password(
     )
 
     return {"message": "Password updated successfully"}
+
+@app.post("/auth/forgot-password")
+@limiter.limit("3/minute")  # Limit to 3 requests per minute per IP
+async def forgot_password(request: Request, forgot_request: ForgotPasswordRequest):
+    """Request password reset - generates and stores reset token"""
+    users_collection = get_users_collection()
+
+    # Find user by email
+    user = await users_collection.find_one({"email": forgot_request.email})
+
+    # Always return success message (don't reveal if email exists for security)
+    # This prevents email enumeration attacks
+    if user:
+        # Generate secure reset token
+        reset_token = secrets.token_urlsafe(32)
+        reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
+
+        # Store token and expiry in user document
+        await users_collection.update_one(
+            {"email": forgot_request.email},
+            {
+                "$set": {
+                    "reset_token": reset_token,
+                    "reset_token_expiry": reset_token_expiry.isoformat()
+                }
+            }
+        )
+
+        # TODO: In production, send email with reset link
+        # reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
+        # send_email(forgot_request.email, reset_link)
+
+    return {"message": "If the email exists, a password reset link has been sent"}
+
+@app.post("/auth/reset-password")
+async def reset_password(reset_request: ResetPasswordRequest):
+    """Reset password using valid token"""
+    users_collection = get_users_collection()
+
+    # Find user with matching reset token
+    user = await users_collection.find_one({"reset_token": reset_request.token})
+
+    if not user:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired reset token"
+        )
+
+    # Check if token is expired
+    reset_token_expiry = datetime.fromisoformat(user.get("reset_token_expiry", ""))
+    if datetime.utcnow() > reset_token_expiry:
+        # Clear expired token
+        await users_collection.update_one(
+            {"_id": user["_id"]},
+            {
+                "$unset": {
+                    "reset_token": "",
+                    "reset_token_expiry": ""
+                }
+            }
+        )
+        raise HTTPException(
+            status_code=400,
+            detail="Reset token has expired. Please request a new one"
+        )
+
+    # Hash new password
+    hashed_password = get_password_hash(reset_request.new_password)
+
+    # Update password and clear reset token
+    await users_collection.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {"password": hashed_password},
+            "$unset": {
+                "reset_token": "",
+                "reset_token_expiry": ""
+            }
+        }
+    )
+
+    return {"message": "Password has been reset successfully"}
 
 @app.post("/users/me/avatar")
 async def upload_avatar(

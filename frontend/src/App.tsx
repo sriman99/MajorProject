@@ -6,6 +6,8 @@ import { Home } from './pages/Home'
 import { DoctorHome } from './pages/DoctorHome'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import Features from './pages/Features'
 import RespiratoryAnalysis from './pages/RespiratoryAnalysis'
 import Appointments from './pages/Appointments'
@@ -144,6 +146,8 @@ function AppLayout() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/features" element={<Features />} />
         <Route path="/analysis" element={<RespiratoryAnalysis />} />
         <Route path="/appointments" element={<Appointments />} />
