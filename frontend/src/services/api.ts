@@ -301,6 +301,16 @@ export interface TokenResponse {
   token_type: string;
 }
 
+export interface ForgotPasswordData {
+  email: string;
+}
+
+export interface ResetPasswordData {
+  token: string;
+  new_password: string;
+  confirm_password: string;
+}
+
 export const authApi = {
   // Login
   login: async (data: LoginData): Promise<TokenResponse> => {
@@ -319,6 +329,18 @@ export const authApi = {
   // Signup
   signup: async (data: SignupData): Promise<User> => {
     const response = await apiClient.post('/signup', data);
+    return response.data;
+  },
+
+  // Forgot Password
+  forgotPassword: async (data: ForgotPasswordData): Promise<{ message: string }> => {
+    const response = await apiClient.post('/auth/forgot-password', data);
+    return response.data;
+  },
+
+  // Reset Password
+  resetPassword: async (data: ResetPasswordData): Promise<{ message: string }> => {
+    const response = await apiClient.post('/auth/reset-password', data);
     return response.data;
   },
 };
