@@ -314,7 +314,6 @@ class AppointmentWithPatient(BaseModel):
     created_at: str
     patient: Optional[Dict[str, Any]] = None
 
-<<<<<<< HEAD
 class PaymentCreate(BaseModel):
     amount: float
     appointment_id: str
@@ -327,7 +326,11 @@ class Payment(BaseModel):
     amount: float
     status: Literal["success", "pending", "failed"]
     payment_method: str
-=======
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
 class NotificationCreate(BaseModel):
     user_id: str
     title: str
@@ -343,19 +346,15 @@ class Notification(BaseModel):
     type: Literal["appointment", "message", "alert", "success"]
     link: Optional[str] = None
     is_read: bool = False
->>>>>>> feature/notifications
     created_at: str
 
     class Config:
         from_attributes = True
 
-<<<<<<< HEAD
-=======
 class NotificationsResponse(BaseModel):
     notifications: List[Notification]
     unread_count: int
 
->>>>>>> feature/notifications
 # =============================================
 # HELPER FUNCTIONS
 # =============================================
