@@ -9,10 +9,11 @@ import {
 } from "../components/ui/tabs"
 import { useToast } from "../components/ui/use-toast"
 import { RecordingModal } from "../components/ui/recording-modal"
-import { UploadIcon, MicIcon, Loader2, Calendar, Clock, FileText, Volume2, Info } from "lucide-react"
+import { UploadIcon, MicIcon, Loader2, Calendar, Clock, FileText, Volume2, Info, Stethoscope, Building2, MapPin, Phone, ArrowRight } from "lucide-react"
 import { useAuth } from "../hooks/useAuth"
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog"
+import { doctorsApi, hospitalsApi, type Doctor, type Hospital } from "../services/api"
 
 // Backend response format from documentation
 type BackendAnalysisResponse = {
@@ -446,7 +447,40 @@ function AnalysisResults({
   onReset: () => void
 }) {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
-  
+  const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [hospitals, setHospitals] = useState<Hospital[]>([])
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true)
+  const navigate = useNavigate()
+
+  // Fetch doctors and hospitals for recommendations
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        setLoadingRecommendations(true)
+        const [doctorsData, hospitalsData] = await Promise.all([
+          doctorsApi.getAll(),
+          hospitalsApi.getAll()
+        ])
+        // Filter for respiratory specialists if possible
+        const respiratoryDoctors = doctorsData.filter(
+          (doc: Doctor) => doc.specialties?.some((s: string) =>
+            s.toLowerCase().includes('pulmon') ||
+            s.toLowerCase().includes('respiratory') ||
+            s.toLowerCase().includes('lung')
+          )
+        )
+        // Use filtered doctors if available, otherwise show first 3
+        setDoctors(respiratoryDoctors.length > 0 ? respiratoryDoctors.slice(0, 3) : doctorsData.slice(0, 3))
+        setHospitals(hospitalsData.slice(0, 3))
+      } catch (error) {
+        console.error('Error fetching recommendations:', error)
+      } finally {
+        setLoadingRecommendations(false)
+      }
+    }
+    fetchRecommendations()
+  }, [])
+
   // Add safety checks to handle potentially undefined values
   if (!result || !result.details) {
     return (
@@ -531,7 +565,134 @@ function AnalysisResults({
           </div>
         </CardContent>
       </Card>
-      
+
+      {/* Recommendations Section */}
+      <div className="mt-8 space-y-6">
+        <h2 className="text-2xl font-bold text-[#1a2352] text-center">
+          Recommended for You
+        </h2>
+        <p className="text-gray-600 text-center max-w-2xl mx-auto">
+          Based on your analysis results, we recommend consulting with these specialists
+        </p>
+
+        {loadingRecommendations ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-8 h-8 animate-spin text-[#ff7757]" />
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Recommended Doctors */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Stethoscope className="w-6 h-6 text-[#ff7757]" />
+                  <h3 className="text-lg font-semibold">Recommended Doctors</h3>
+                </div>
+
+                {doctors.length > 0 ? (
+                  <div className="space-y-4">
+                    {doctors.map((doctor) => (
+                      <div
+                        key={doctor.id}
+                        className="p-4 border rounded-lg hover:border-[#ff7757] transition-colors cursor-pointer"
+                        onClick={() => navigate(`/appointments?doctor=${doctor.id}`)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            {doctor.image_url ? (
+                              <img src={doctor.image_url} alt={doctor.name} className="w-12 h-12 rounded-full object-cover" />
+                            ) : (
+                              <Stethoscope className="w-6 h-6 text-gray-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-[#1a2352] truncate">{doctor.name}</h4>
+                            <p className="text-sm text-gray-500 truncate">
+                              {doctor.specialties?.join(', ') || 'General Physician'}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {doctor.experience || 'Experienced'}
+                            </p>
+                          </div>
+                          <ArrowRight className="w-5 h-5 text-gray-400" />
+                        </div>
+                      </div>
+                    ))}
+                    <Link
+                      to="/appointments"
+                      className="block text-center text-[#ff7757] hover:underline text-sm mt-2"
+                    >
+                      View All Doctors →
+                    </Link>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No doctors available</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Recommended Hospitals */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Building2 className="w-6 h-6 text-[#ff7757]" />
+                  <h3 className="text-lg font-semibold">Nearby Hospitals</h3>
+                </div>
+
+                {hospitals.length > 0 ? (
+                  <div className="space-y-4">
+                    {hospitals.map((hospital) => (
+                      <div
+                        key={hospital.id}
+                        className="p-4 border rounded-lg hover:border-[#ff7757] transition-colors"
+                      >
+                        <h4 className="font-medium text-[#1a2352]">{hospital.name}</h4>
+                        <div className="flex items-start gap-1 mt-1 text-sm text-gray-500">
+                          <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{hospital.address}</span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
+                          <Phone className="w-4 h-4" />
+                          <span>{hospital.phone}</span>
+                        </div>
+                        {hospital.directions_url && (
+                          <a
+                            href={hospital.directions_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#ff7757] text-sm hover:underline mt-2 inline-block"
+                          >
+                            Get Directions →
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                    <Link
+                      to="/hospitals"
+                      className="block text-center text-[#ff7757] hover:underline text-sm mt-2"
+                    >
+                      View All Hospitals →
+                    </Link>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-center py-4">No hospitals available</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Book Appointment CTA */}
+        <div className="text-center mt-6">
+          <Button
+            onClick={() => navigate('/appointments')}
+            className="bg-[#ff7757] hover:bg-[#e85d3d] text-white px-8 py-6 text-lg"
+          >
+            Book an Appointment Now
+          </Button>
+        </div>
+      </div>
+
       {/* Detailed Report Modal - Made more compact */}
       <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
         <DialogContent className="max-w-md">

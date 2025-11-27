@@ -28,6 +28,35 @@ const mockResponses: Record<string, string> = {
   "Treatment": "Respiratory health treatments may include:\n\n1. Medications:\n   - Bronchodilators\n   - Corticosteroids\n   - Antibiotics (for infections)\n   - Mucolytics\n\n2. Therapies:\n   - Oxygen therapy\n   - Pulmonary rehabilitation\n   - Breathing exercises\n   - Chest physiotherapy\n\n3. Lifestyle Changes:\n   - Smoking cessation\n   - Regular exercise\n   - Healthy diet\n   - Stress management\n\n4. Surgical Options (in severe cases):\n   - Lung volume reduction\n   - Lung transplant\n   - Bullectomy\n\nAlways follow your doctor's recommendations and treatment plan."
 }
 
+// Smart fallback response based on user message keywords
+const getSmartFallbackResponse = (message: string): string => {
+  const lowerMessage = message.toLowerCase()
+
+  // Check for specific keywords and return relevant response
+  if (lowerMessage.includes('cough') || lowerMessage.includes('coughing')) {
+    return "Coughing can be caused by various factors:\n\n**Common Causes:**\n• Viral infections (cold, flu)\n• Allergies\n• Asthma\n• Acid reflux\n• Environmental irritants\n\n**When to See a Doctor:**\n• Cough lasting more than 3 weeks\n• Coughing up blood\n• Difficulty breathing\n• High fever\n\n**Home Remedies:**\n• Stay hydrated\n• Use honey (for adults)\n• Humidify the air\n• Avoid irritants\n\nPlease consult a healthcare professional for persistent symptoms."
+  }
+
+  if (lowerMessage.includes('breath') || lowerMessage.includes('breathing') || lowerMessage.includes('shortness')) {
+    return "Shortness of breath (dyspnea) can be concerning:\n\n**Common Causes:**\n• Asthma\n• COPD\n• Pneumonia\n• Anxiety\n• Heart conditions\n• Anemia\n\n**Warning Signs (Seek Immediate Help):**\n• Sudden severe breathlessness\n• Chest pain\n• Blue lips or fingers\n• Confusion\n\n**Management Tips:**\n• Practice pursed-lip breathing\n• Stay calm and relaxed\n• Sit upright\n• Use prescribed inhalers\n\nIf symptoms are severe or sudden, seek emergency care immediately."
+  }
+
+  if (lowerMessage.includes('asthma')) {
+    return "Asthma is a chronic respiratory condition:\n\n**Symptoms:**\n• Wheezing\n• Shortness of breath\n• Chest tightness\n• Coughing (especially at night)\n\n**Triggers to Avoid:**\n• Allergens (dust, pollen, pet dander)\n• Smoke\n• Cold air\n• Exercise (for some)\n• Stress\n\n**Management:**\n• Use controller medications as prescribed\n• Keep rescue inhaler handy\n• Monitor peak flow\n• Create an action plan with your doctor\n\nRegular check-ups are essential for proper management."
+  }
+
+  if (lowerMessage.includes('pneumonia')) {
+    return "Pneumonia is a serious lung infection:\n\n**Symptoms:**\n• High fever\n• Productive cough\n• Chest pain when breathing\n• Fatigue\n• Shortness of breath\n\n**Risk Factors:**\n• Age (very young or elderly)\n• Weakened immune system\n• Chronic diseases\n• Smoking\n\n**Prevention:**\n• Get vaccinated (pneumococcal, flu)\n• Practice good hygiene\n• Don't smoke\n• Maintain good health\n\nPneumonia requires medical treatment. Please see a doctor if you suspect you have it."
+  }
+
+  if (lowerMessage.includes('wheez') || lowerMessage.includes('whistl')) {
+    return "Wheezing is a whistling sound when breathing:\n\n**Common Causes:**\n• Asthma\n• Allergies\n• Bronchitis\n• COPD\n• Respiratory infections\n\n**When to Seek Help:**\n• First-time wheezing\n• Accompanied by difficulty breathing\n• Bluish skin color\n• Chest pain\n\n**Immediate Relief:**\n• Sit upright\n• Stay calm\n• Use prescribed bronchodilator\n• Breathe slowly\n\nConsult a doctor to determine the underlying cause."
+  }
+
+  // Default response for general health questions
+  return "Thank you for your health question. Here's some general respiratory health advice:\n\n**Key Tips for Healthy Lungs:**\n1. Don't smoke and avoid secondhand smoke\n2. Exercise regularly\n3. Maintain good indoor air quality\n4. Practice good hygiene\n5. Get vaccinated\n6. Practice breathing exercises\n\n**When to See a Doctor:**\n• Persistent cough (>3 weeks)\n• Difficulty breathing\n• Chest pain\n• Coughing up blood\n• Unexplained weight loss\n\nFor specific medical advice, please consult a healthcare professional. You can also book an appointment with our specialist doctors through the Appointments page."
+}
+
 export function ChatBot() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
@@ -76,7 +105,7 @@ export function ChatBot() {
         try {
           console.log("Initializing Gemini API...")
           const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-          
+
           // Configure safety settings
           const safetySettings = [
             {
@@ -98,15 +127,15 @@ export function ChatBot() {
           ]
 
           console.log("Getting model...")
-          const model = genAI.getGenerativeModel({ 
+          const model = genAI.getGenerativeModel({
             model: "gemini-2.0-flash",
             safetySettings,
           })
-          
+
           const prompt = `
-            You are a professional medical assistant specializing in respiratory health. 
+            You are a professional medical assistant specializing in respiratory health.
             Please provide accurate, helpful, and professional advice about: ${userMessage}
-            
+
             Guidelines for your response:
             1. Focus only on respiratory health-related topics
             2. If the question is not health-related, politely redirect to health topics
@@ -123,10 +152,10 @@ export function ChatBot() {
             contents: [{ role: "user", parts: [{ text: prompt }] }],
           })
           console.log("Response received:", result)
-          
+
           const response = await result.response
           console.log("Response text:", response.text())
-          
+
           const text = response.text()
 
           if (!text) {
@@ -134,14 +163,22 @@ export function ChatBot() {
           }
 
           setMessages(prev => [...prev, { role: "assistant", content: text }])
-        } catch (apiError) {
+        } catch (apiError: any) {
           console.error("Gemini API Error:", apiError)
-          throw apiError
+          // Check if it's a rate limit error (429)
+          if (apiError?.message?.includes('429') || apiError?.message?.includes('quota') || apiError?.message?.includes('RATE_LIMIT')) {
+            console.log("Rate limit hit, using smart fallback response")
+            // Use intelligent fallback based on user message
+            const fallbackResponse = getSmartFallbackResponse(userMessage)
+            setMessages(prev => [...prev, { role: "assistant", content: fallbackResponse }])
+          } else {
+            throw apiError
+          }
         }
       } else {
         console.log("No API key found, using mock response")
         // Fallback to mock response if no API key
-        const fallbackResponse = mockResponses["Treatment"] || "I'm here to help with respiratory health. Please try asking about specific topics like treatment, prevention, symptoms, or heart health."
+        const fallbackResponse = getSmartFallbackResponse(userMessage)
         setMessages(prev => [...prev, { role: "assistant", content: fallbackResponse }])
       }
     } catch (error) {
