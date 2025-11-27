@@ -24,9 +24,19 @@ export default function SignUp() {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
+  // Validate password strength
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) return "Password must be at least 8 characters"
+    if (!/\d/.test(password)) return "Password must contain at least one digit"
+    if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter"
+    if (!/[a-z]/.test(password)) return "Password must contain at least one lowercase letter"
+    if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) return "Password must contain at least one special character"
+    return null
+  }
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-    
+
     if (!formData.full_name) newErrors.full_name = "Full name is required"
     if (!formData.email) {
       newErrors.email = "Email is required"
@@ -34,7 +44,12 @@ export default function SignUp() {
       newErrors.email = "Email format is invalid"
     }
     if (!formData.phone) newErrors.phone = "Phone number is required"
-    if (!formData.password) newErrors.password = "Password is required"
+    if (!formData.password) {
+      newErrors.password = "Password is required"
+    } else {
+      const passwordError = validatePassword(formData.password)
+      if (passwordError) newErrors.password = passwordError
+    }
     if (!formData.confirm_password) newErrors.confirm_password = "Please confirm your password"
     if (!formData.role) newErrors.role = "Please select a role"
     
@@ -269,6 +284,9 @@ export default function SignUp() {
               transition={{ duration: 0.5, delay: 0.7 }}
             >
               <Label htmlFor="password">Password</Label>
+              <p className="text-xs text-gray-500 mb-1">
+                Must be 8+ chars with uppercase, lowercase, number & special character
+              </p>
               <Input
                 id="password"
                 type="password"
