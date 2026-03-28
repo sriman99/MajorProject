@@ -20,11 +20,35 @@ app.add_middleware(
 )
 
 # Load the model
-MODEL_PATH = "../ml_model/prediction_lung_disease_model.keras"
+MODEL_PATH = os.getenv("MODEL_PATH", "prediction_lung_disease_model.keras")
 model = tf.keras.models.load_model(MODEL_PATH)
 
-# Disease classes (update these based on your model's classes)
-CLASSES = ['Bronchiectasis', 'Bronchiolitis', 'LRTI', 'Pneumonia', 'URTI']
+# Default disease classes used by the trained model. Override with CLASS_LABELS env var
+# if your deployed model uses a different label order.
+DEFAULT_CLASSES = [
+    "Asthma",
+    "Bronchiectasis",
+    "Bronchiolitis",
+    "COPD",
+    "Healthy",
+    "LRTI",
+    "Pneumonia",
+    "URTI",
+]
+
+
+def resolve_class_labels(num_outputs: int):
+    env_labels = os.getenv("CLASS_LABELS", "").strip()
+    if env_labels:
+        labels = [label.strip() for label in env_labels.split(",") if label.strip()]
+        if len(labels) == num_outputs:
+            return labels
+
+    if len(DEFAULT_CLASSES) == num_outputs:
+        return DEFAULT_CLASSES
+
+    # Keep the API stable even if model classes and configured labels drift.
+    return [f"class_{idx}" for idx in range(num_outputs)]
 
 def extract_features(file_path, max_pad_len=862):
     """Extract MFCC features from audio file"""
@@ -62,23 +86,34 @@ async def predict_disease(audio_file: UploadFile = File(...)):
             await tmp_file.write(content)
 
         # Extract features (run in executor to avoid blocking)
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         features = await loop.run_in_executor(None, extract_features, tmp_path)
         features = np.expand_dims(features, axis=[0, -1])  # Add batch and channel dimensions
 
         # Make prediction (run in executor to avoid blocking)
-        prediction = await loop.run_in_executor(None, model.predict, features, 0)  # 0 = verbose level
+        prediction = await loop.run_in_executor(None, lambda: model.predict(features, verbose=0))
 
-        predicted_class = CLASSES[np.argmax(prediction[0])]
-        confidence = float(np.max(prediction[0]))
+        if prediction is None or len(prediction) == 0:
+            raise ValueError("Model returned empty prediction output")
+
+        probabilities = np.asarray(prediction[0]).ravel()
+        if probabilities.size == 0:
+            raise ValueError("Model returned invalid prediction probabilities")
+
+        classes = resolve_class_labels(probabilities.size)
+        predicted_idx = int(np.argmax(probabilities))
+        predicted_class = classes[predicted_idx]
+        confidence = float(np.max(probabilities))
+
+        predictions_map = {
+            class_name: float(prob)
+            for class_name, prob in zip(classes, probabilities)
+        }
 
         return {
             "disease": predicted_class,
             "confidence": confidence,
-            "predictions": {
-                class_name: float(pred)
-                for class_name, pred in zip(CLASSES, prediction[0])
-            }
+            "predictions": predictions_map
         }
 
     except ValueError as e:

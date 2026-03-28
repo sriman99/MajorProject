@@ -22,7 +22,7 @@ export default function ProfileMenu() {
         <div className="relative">
             <button onClick={handleToggle} className="flex items-center">
                 <img
-                    src={user.avatar_url || '/default-avatar.png'}
+                    src={user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}&background=ff7757&color=fff&size=200`}
                     alt="User Avatar"
                     className="w-8 h-8 rounded-full"
                 />

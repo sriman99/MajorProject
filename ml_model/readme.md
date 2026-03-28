@@ -1,50 +1,84 @@
-# Respiratory Disease Classification Model
+# Respiratory Disease Classification Service
 
-This directory contains a deep learning model for classifying respiratory diseases from audio recordings of respiratory sounds.
+This folder contains the ML inference service used by the backend for respiratory disease prediction.
 
-## Model Architecture
+## What this service does
 
-The model uses a hybrid CNN-GRU (Convolutional Neural Network + Gated Recurrent Unit) architecture:
-- Input: MFCC features from respiratory audio (shape: 40x862x1)
-- 2 Convolutional layers with BatchNormalization
-- Bidirectional GRU layer
-- Dense layers with dropout for final classification
+- Loads `prediction_lung_disease_model.keras`
+- Accepts WAV audio uploads on `POST /predict`
+- Extracts MFCC features (`40 x 862`)
+- Returns predicted disease, confidence, and class probabilities
 
-## Features
-- Audio preprocessing using librosa
-- MFCC (Mel-frequency cepstral coefficients) feature extraction
-- Data augmentation techniques:
-  - Noise injection
-  - Time stretching
-  - Pitch shifting
+## Service setup
 
-## Supported Diseases
-The model can classify various respiratory conditions including:
-- Bronchiectasis
-- Bronchiolitis
-- Pneumonia
-- URTI (Upper Respiratory Tract Infection)
-- LRTI (Lower Respiratory Tract Infection)
+### 1. Create and activate a virtual environment (recommended)
 
-## Model Files
-- `prediction_lung_disease_model.keras`: Trained model file
-- `Respiratory_Disease_Classifier.ipynb`: Training notebook
-
-## Requirements
-```
-tensorflow
-librosa
-numpy
-fastapi
-python-multipart
-uvicorn
+```powershell
+cd ml_model
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 ```
 
-## API Usage
-The model is exposed through a FastAPI endpoint. To use the model:
+### 2. Install dependencies
 
-1. Send a POST request to `/predict` endpoint
-2. Upload an audio file (WAV format)
-3. Receive the prediction response with disease classification
+```powershell
+pip install -r requirements.txt
+```
 
-See the `/backend` directory for API implementation details.
+### 3. Start the ML service
+
+```powershell
+python main.py
+```
+
+Service URL: `http://localhost:8001`
+
+## API endpoints
+
+- `GET /health` - health check
+- `POST /predict` - model inference (multipart upload)
+
+## Correct curl test command
+
+The upload field name must be `audio_file`:
+
+```powershell
+curl.exe -X POST http://localhost:8001/predict -F "audio_file=@test_audio.wav"
+```
+
+## Class label configuration
+
+The model output dimension must match the configured label count.
+
+- The service defaults to 8 labels:
+  - Asthma
+  - Bronchiectasis
+  - Bronchiolitis
+  - COPD
+  - Healthy
+  - LRTI
+  - Pneumonia
+  - URTI
+- If your model uses a different label order, set `CLASS_LABELS` before starting the service.
+
+Example:
+
+```powershell
+$env:CLASS_LABELS = "Asthma,Bronchiectasis,Bronchiolitis,COPD,Healthy,LRTI,Pneumonia,URTI"
+python main.py
+```
+
+## Common troubleshooting
+
+- `422 Unprocessable Entity` on `/predict`:
+  - Usually wrong multipart field name. Use `audio_file`.
+- `500 Internal error: list index out of range`:
+  - Class labels do not match model output size/order.
+  - Set `CLASS_LABELS` correctly or use a model trained with matching labels.
+
+## Model files
+
+- `prediction_lung_disease_model.keras` - trained model
+- `Respiratory_Disease_Classifier.ipynb` - training notebook
+
+See backend integration in `backend/main.py` (`/api/analysis/lung-disease`).

@@ -1,69 +1,109 @@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, MapPin } from "lucide-react"
-import { useState } from "react"
+import { Search, MapPin, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
 import { HospitalCard } from "@/components/HospitalCard"
+import { Skeleton } from "@/components/ui/skeleton"
+import apiClient from "@/services/api"
 
-// Sample data - In a real app, this would come from an API
-const HOSPITALS = [
-  {
-    id: "adlux-1",
-    name: "Apollo Adlux Hospital",
-    image: "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?q=80&w=2960&auto=format&fit=crop", // Placeholder image
-    address: "Cable Junction, Ernakulam District, National Highway 47, Karukutty, Cochin, Kerala - 683576",
-    phone: "+91 484 7185000",
-    directions_url: "https://maps.google.com/?q=Apollo+Adlux+Hospital",
-    description: "Apollo Adlux Hospital is a state-of-the-art multi-specialty hospital committed to providing world-class healthcare services.",
-    specialties: ["Cardiology", "Neurology", "Orthopedics"],
-    timings: {
-      emergency: "24/7",
-      opd: "Mon-Sat: 9:00 AM - 6:00 PM",
-      visiting: "11:00 AM - 1:00 PM, 4:00 PM - 6:00 PM"
-    }
-  },
-  {
-    id: "banner-1",
-    name: "Apollo Hospitals Bannerghatta",
-    image: "https://images.unsplash.com/photo-1632833239869-a37e3a5806d2?q=80&w=2960&auto=format&fit=crop", // Placeholder image
-    address: "154/11, Bannerghatta Road, Amalodbhavi Nagar, Panduranga Nagar, Bangalore - 560076",
-    phone: "+91 804 073 3333",
-    directions_url: "https://maps.google.com/?q=Apollo+Hospitals+Bannerghatta",
-    description: "Apollo Hospitals Bannerghatta is equipped with the latest technology and expert healthcare professionals.",
-    specialties: ["Pediatrics", "General Surgery", "Emergency Medicine"],
-    timings: {
-      emergency: "24/7",
-      opd: "Mon-Sat: 8:00 AM - 8:00 PM",
-      visiting: "10:00 AM - 1:00 PM, 4:00 PM - 7:00 PM"
-    }
-  },
-  {
-    id: "spec-1",
-    name: "Apollo Speciality Hospital",
-    image: "https://images.unsplash.com/photo-1596541223130-5d31a73fb6c6?q=80&w=2960&auto=format&fit=crop", // Placeholder image
-    address: "32nd Street, 6th Block, Jayanagar, Bangalore - 560082",
-    phone: "+91 804 164 7001",
-    directions_url: "https://maps.google.com/?q=Apollo+Speciality+Hospital+Jayanagar",
-    description: "Apollo Speciality Hospital focuses on providing specialized care with advanced medical procedures.",
-    specialties: ["Oncology", "Gastroenterology", "Urology"],
-    timings: {
-      emergency: "24/7",
-      opd: "Mon-Sat: 9:00 AM - 7:00 PM",
-      visiting: "10:30 AM - 1:30 PM, 4:30 PM - 7:30 PM"
-    }
+interface Hospital {
+  id: string
+  name: string
+  address: string
+  phone: string
+  description: string
+  specialties: string[]
+  image_url?: string
+  timings: {
+    emergency: string
+    opd: string
+    visiting: string
   }
-]
+  directions_url: string
+  rating?: number
+  beds?: number
+}
 
 export default function Hospitals() {
   const [searchQuery, setSearchQuery] = useState("")
   const [citySearch, setCitySearch] = useState("")
+  const [hospitals, setHospitals] = useState<Hospital[]>([])
+  const [filteredHospitals, setFilteredHospitals] = useState<Hospital[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch hospitals from API
+  useEffect(() => {
+    const fetchHospitals = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await apiClient.get<Hospital[]>('/hospitals')
+        setHospitals(response.data)
+        setFilteredHospitals(response.data)
+      } catch (err) {
+        console.error('Error fetching hospitals:', err)
+        setError('Failed to fetch hospitals. Please try again later.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchHospitals()
+  }, [])
 
   // Filter hospitals based on search criteria
-  const filteredHospitals = HOSPITALS.filter(hospital => {
-    const matchesSearch = hospital.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         hospital.address.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCity = citySearch === "" || hospital.address.toLowerCase().includes(citySearch.toLowerCase())
-    return matchesSearch && matchesCity
-  })
+  useEffect(() => {
+    let filtered = [...hospitals]
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(hospital =>
+        hospital.name.toLowerCase().includes(query) ||
+        hospital.address.toLowerCase().includes(query) ||
+        hospital.specialties.some(s => s.toLowerCase().includes(query))
+      )
+    }
+
+    if (citySearch) {
+      filtered = filtered.filter(hospital =>
+        hospital.address.toLowerCase().includes(citySearch.toLowerCase())
+      )
+    }
+
+    setFilteredHospitals(filtered)
+  }, [searchQuery, citySearch, hospitals])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc]">
+        <div className="container mx-auto px-4 py-12">
+          <div className="mb-8">
+            <Skeleton className="h-10 w-80 mb-2" />
+            <Skeleton className="h-6 w-64" />
+          </div>
+          <Skeleton className="h-24 w-full rounded-2xl mb-8" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="h-80 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -71,7 +111,7 @@ export default function Hospitals() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-[#1a2352] mb-2">Find A Hospital</h1>
           <p className="text-xl text-gray-600">
-            Locate Apollo Hospitals Near You
+            Locate Quality Healthcare Facilities Near You
           </p>
         </div>
 
@@ -82,13 +122,13 @@ export default function Hospitals() {
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Search hospitals..."
+                placeholder="Search hospitals or specialties..."
                 className="pl-4 pr-12 py-6 text-lg rounded-full border-gray-200"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <Button
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full w-12 h-12 bg-[#1a2352] hover:bg-[#1a2352]/90"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full w-12 h-12 bg-[#008080] hover:bg-[#006666]"
               >
                 <Search className="w-6 h-6 text-white" />
               </Button>
@@ -111,12 +151,22 @@ export default function Hospitals() {
         {/* Results Count */}
         <p className="text-gray-600 mb-6">{filteredHospitals.length} hospitals found</p>
 
-        {/* Hospitals List */}
-        <div className="max-w-6xl mx-auto space-y-6">
+        {/* Hospitals Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredHospitals.map(hospital => (
             <HospitalCard
               key={hospital.id}
-              {...hospital}
+              id={hospital.id}
+              name={hospital.name}
+              image={hospital.image_url || "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=600&h=400&fit=crop"}
+              address={hospital.address}
+              phone={hospital.phone}
+              directions_url={hospital.directions_url}
+              description={hospital.description}
+              specialties={hospital.specialties}
+              timings={hospital.timings}
+              rating={hospital.rating}
+              beds={hospital.beds}
             />
           ))}
         </div>
@@ -129,4 +179,4 @@ export default function Hospitals() {
       </div>
     </div>
   )
-} 
+}

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import axios from 'axios'
+import apiClient from '@/services/api'
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
@@ -59,7 +59,7 @@ export const useAuth = create<AuthState>((set) => ({
         return
       }
 
-      const response = await axios.get('http://localhost:8000/users/me', {
+      const response = await apiClient.get('/users/me', {
         headers: {
           Authorization: `Bearer ${token}`
         }

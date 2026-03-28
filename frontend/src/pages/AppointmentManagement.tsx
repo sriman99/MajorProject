@@ -7,7 +7,7 @@ import { Calendar, Clock, FileText, UserCircle, AlertCircle } from "lucide-react
 import { AppointmentStatusUpdate } from "@/components/AppointmentStatusUpdate"
 import { useAuthWithFetch } from "@/hooks/useAuth"
 import { Skeleton } from "@/components/ui/skeleton"
-import axios from "axios"
+import apiClient from "@/services/api"
 import { toast } from "sonner"
 
 interface Appointment {
@@ -49,7 +49,7 @@ export default function AppointmentManagement() {
       } else if (user?.role === 'doctor') {
         // If user is a doctor but doctor_profile isn't loaded, fetch it
         try {
-          const doctorResponse = await axios.get('http://localhost:8000/doctors/me', {
+          const doctorResponse = await apiClient.get('/doctors/me', {
             headers: {
               Authorization: `Bearer ${token}`
             }
@@ -62,7 +62,7 @@ export default function AppointmentManagement() {
       }
       
       // Fetch appointments
-      const response = await axios.get('http://localhost:8000/appointments', {
+      const response = await apiClient.get<Appointment[]>('/appointments', {
         headers: {
           Authorization: `Bearer ${token}`
         }

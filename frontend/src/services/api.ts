@@ -2,7 +2,7 @@
  * API Service Layer
  * Centralized API communication with backend
  */
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { toast } from 'sonner';
 
 const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
@@ -20,7 +20,7 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers!.Authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -30,7 +30,7 @@ apiClient.interceptors.request.use(
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
+  (error: any) => {
     if (error.response?.status === 401) {
       // Token expired or invalid
       localStorage.removeItem('access_token');
@@ -70,13 +70,13 @@ export interface CreateAppointmentData {
 export const appointmentsApi = {
   // Get all appointments for current user
   getAll: async (): Promise<Appointment[]> => {
-    const response = await apiClient.get('/appointments');
+    const response = await apiClient.get<Appointment[]>('/appointments');
     return response.data;
   },
 
   // Create new appointment
   create: async (data: CreateAppointmentData): Promise<Appointment> => {
-    const response = await apiClient.post('/appointments', data);
+    const response = await apiClient.post<Appointment>('/appointments', data);
     return response.data;
   },
 
@@ -85,7 +85,7 @@ export const appointmentsApi = {
     appointmentId: string,
     status: Appointment['status']
   ): Promise<Appointment> => {
-    const response = await apiClient.put(`/appointments/${appointmentId}`, null, {
+    const response = await apiClient.put<Appointment>(`/appointments/${appointmentId}`, null, {
       params: { status },
     });
     return response.data;
@@ -143,31 +143,31 @@ export const doctorsApi = {
   // Get all doctors
   getAll: async (specialty?: string): Promise<Doctor[]> => {
     const params = specialty ? { specialty } : {};
-    const response = await apiClient.get('/doctors', { params });
+    const response = await apiClient.get<Doctor[]>('/doctors', { params });
     return response.data;
   },
 
   // Get specific doctor
   getById: async (doctorId: string): Promise<Doctor> => {
-    const response = await apiClient.get(`/doctors/${doctorId}`);
+    const response = await apiClient.get<Doctor>(`/doctors/${doctorId}`);
     return response.data;
   },
 
   // Get current doctor's profile
   getMyProfile: async (): Promise<Doctor> => {
-    const response = await apiClient.get('/doctors/me');
+    const response = await apiClient.get<Doctor>('/doctors/me');
     return response.data;
   },
 
   // Get current doctor's statistics
   getMyStats: async (): Promise<DoctorStats> => {
-    const response = await apiClient.get('/doctors/me/stats');
+    const response = await apiClient.get<DoctorStats>('/doctors/me/stats');
     return response.data;
   },
 
   // Get current doctor's patients
   getMyPatients: async (): Promise<PatientInfo[]> => {
-    const response = await apiClient.get('/doctors/me/patients');
+    const response = await apiClient.get<PatientInfo[]>('/doctors/me/patients');
     return response.data;
   },
 
@@ -182,7 +182,7 @@ export const doctorsApi = {
     if (endDate) params.end_date = endDate;
     if (status) params.status = status;
 
-    const response = await apiClient.get('/doctors/me/schedule', { params });
+    const response = await apiClient.get<AppointmentWithPatient[]>('/doctors/me/schedule', { params });
     return response.data;
   },
 };
@@ -214,7 +214,7 @@ export interface Analysis {
 export const analysisApi = {
   // Get all analyses for current user
   getAll: async (): Promise<Analysis[]> => {
-    const response = await apiClient.get('/analysis');
+    const response = await apiClient.get<Analysis[]>('/analysis');
     return response.data;
   },
 
@@ -223,7 +223,7 @@ export const analysisApi = {
     const formData = new FormData();
     formData.append('audio_file', audioFile);
 
-    const response = await apiClient.post('/api/analysis/lung-disease', formData, {
+    const response = await apiClient.post<Analysis['result']>('/api/analysis/lung-disease', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -263,19 +263,19 @@ export interface PasswordChange {
 export const usersApi = {
   // Get current user profile
   getMe: async (): Promise<User> => {
-    const response = await apiClient.get('/users/me');
+    const response = await apiClient.get<User>('/users/me');
     return response.data;
   },
 
   // Update current user profile
   updateProfile: async (data: UserProfileUpdate): Promise<User> => {
-    const response = await apiClient.put('/users/me', data);
+    const response = await apiClient.put<User>('/users/me', data);
     return response.data;
   },
 
   // Change password
   changePassword: async (data: PasswordChange): Promise<{ message: string }> => {
-    const response = await apiClient.put('/users/me/password', data);
+    const response = await apiClient.put<{ message: string }>('/users/me/password', data);
     return response.data;
   },
 
@@ -284,7 +284,7 @@ export const usersApi = {
     const formData = new FormData();
     formData.append('avatar', file);
 
-    const response = await apiClient.post('/users/me/avatar', formData, {
+    const response = await apiClient.post<{ avatar_url: string; message: string }>('/users/me/avatar', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -294,7 +294,7 @@ export const usersApi = {
 
   // Get all users (admin only)
   getAll: async (): Promise<User[]> => {
-    const response = await apiClient.get('/users');
+    const response = await apiClient.get<User[]>('/users');
     return response.data;
   },
 };
@@ -359,13 +359,13 @@ export interface AdminAppointmentsParams {
 export const adminApi = {
   // Get admin dashboard statistics
   getStats: async (): Promise<AdminStats> => {
-    const response = await apiClient.get('/admin/stats');
+    const response = await apiClient.get<AdminStats>('/admin/stats');
     return response.data;
   },
 
   // Get all users with pagination and filtering
   getUsers: async (params?: AdminUsersParams): Promise<AdminUsersResponse> => {
-    const response = await apiClient.get('/admin/users', { params });
+    const response = await apiClient.get<AdminUsersResponse>('/admin/users', { params });
     return response.data;
   },
 
@@ -374,7 +374,7 @@ export const adminApi = {
     userId: string,
     isActive: boolean
   ): Promise<{ message: string; user_id: string; is_active: boolean }> => {
-    const response = await apiClient.put(`/admin/users/${userId}/status`, null, {
+    const response = await apiClient.put<{ message: string; user_id: string; is_active: boolean }>(`/admin/users/${userId}/status`, null, {
       params: { is_active: isActive },
     });
     return response.data;
@@ -382,13 +382,13 @@ export const adminApi = {
 
   // Delete user (soft delete)
   deleteUser: async (userId: string): Promise<{ message: string; user_id: string }> => {
-    const response = await apiClient.delete(`/admin/users/${userId}`);
+    const response = await apiClient.delete<{ message: string; user_id: string }>(`/admin/users/${userId}`);
     return response.data;
   },
 
   // Get all appointments with pagination and filtering
   getAppointments: async (params?: AdminAppointmentsParams): Promise<AdminAppointmentsResponse> => {
-    const response = await apiClient.get('/admin/appointments', { params });
+    const response = await apiClient.get<AdminAppointmentsResponse>('/admin/appointments', { params });
     return response.data;
   },
 };
@@ -412,13 +412,13 @@ export interface Hospital {
 export const hospitalsApi = {
   // Get all hospitals
   getAll: async (): Promise<Hospital[]> => {
-    const response = await apiClient.get('/hospitals');
+    const response = await apiClient.get<Hospital[]>('/hospitals');
     return response.data;
   },
 
   // Get specific hospital
   getById: async (hospitalId: string): Promise<Hospital> => {
-    const response = await apiClient.get(`/hospitals/${hospitalId}`);
+    const response = await apiClient.get<Hospital>(`/hospitals/${hospitalId}`);
     return response.data;
   },
 };
@@ -463,7 +463,7 @@ export const authApi = {
     formData.append('username', data.username);
     formData.append('password', data.password);
 
-    const response = await apiClient.post('/token', formData, {
+    const response = await apiClient.post<TokenResponse>('/token', formData, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
@@ -473,19 +473,19 @@ export const authApi = {
 
   // Signup
   signup: async (data: SignupData): Promise<User> => {
-    const response = await apiClient.post('/signup', data);
+    const response = await apiClient.post<User>('/signup', data);
     return response.data;
   },
 
   // Forgot Password
   forgotPassword: async (data: ForgotPasswordData): Promise<{ message: string }> => {
-    const response = await apiClient.post('/auth/forgot-password', data);
+    const response = await apiClient.post<{ message: string }>('/auth/forgot-password', data);
     return response.data;
   },
 
   // Reset Password
   resetPassword: async (data: ResetPasswordData): Promise<{ message: string }> => {
-    const response = await apiClient.post('/auth/reset-password', data);
+    const response = await apiClient.post<{ message: string }>('/auth/reset-password', data);
     return response.data;
   },
 };
@@ -513,19 +513,19 @@ export interface PaymentCreate {
 export const paymentsApi = {
   // Create payment
   create: async (data: PaymentCreate): Promise<Payment> => {
-    const response = await apiClient.post('/payments', data);
+    const response = await apiClient.post<Payment>('/payments', data);
     return response.data;
   },
 
   // Get all payments for current user
   getAll: async (): Promise<Payment[]> => {
-    const response = await apiClient.get('/payments');
+    const response = await apiClient.get<Payment[]>('/payments');
     return response.data;
   },
 
   // Get specific payment
   getById: async (paymentId: string): Promise<Payment> => {
-    const response = await apiClient.get(`/payments/${paymentId}`);
+    const response = await apiClient.get<Payment>(`/payments/${paymentId}`);
     return response.data;
   },
 };
@@ -553,25 +553,25 @@ export interface NotificationsResponse {
 export const notificationsApi = {
   // Get all notifications for current user
   getAll: async (): Promise<NotificationsResponse> => {
-    const response = await apiClient.get('/notifications');
+    const response = await apiClient.get<NotificationsResponse>('/notifications');
     return response.data;
   },
 
   // Mark notification as read
   markAsRead: async (notificationId: string): Promise<{ message: string; notification_id: string }> => {
-    const response = await apiClient.put(`/notifications/${notificationId}/read`);
+    const response = await apiClient.put<{ message: string; notification_id: string }>(`/notifications/${notificationId}/read`);
     return response.data;
   },
 
   // Mark all notifications as read
   markAllAsRead: async (): Promise<{ message: string; count: number }> => {
-    const response = await apiClient.put('/notifications/read-all');
+    const response = await apiClient.put<{ message: string; count: number }>('/notifications/read-all');
     return response.data;
   },
 
   // Delete notification
   delete: async (notificationId: string): Promise<{ message: string; notification_id: string }> => {
-    const response = await apiClient.delete(`/notifications/${notificationId}`);
+    const response = await apiClient.delete<{ message: string; notification_id: string }>(`/notifications/${notificationId}`);
     return response.data;
   },
 };

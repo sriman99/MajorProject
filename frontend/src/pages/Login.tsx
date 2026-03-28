@@ -4,10 +4,11 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { assets } from "../config/assets"
 import { motion } from "framer-motion"
-import axios from "axios"
-import { useNavigate } from "react-router-dom"
+import apiClient from "@/services/api"
+import { useNavigate, Link } from "react-router-dom"
 import { toast } from "react-hot-toast"
 import { useAuth } from "@/hooks/useAuth"
+import { GoogleLogin, type CredentialResponse } from "@react-oauth/google"
 
 export default function Login() {
   const navigate = useNavigate()
@@ -35,6 +36,29 @@ export default function Login() {
     return Object.keys(newErrors).length === 0
   }
 
+  const handleGoogleLogin = async (credentialResponse: CredentialResponse) => {
+    if (!credentialResponse.credential) return
+    setLoading(true)
+    try {
+      const response = await apiClient.post<{ access_token: string }>("/auth/google", {
+        credential: credentialResponse.credential,
+      })
+      await login(response.data.access_token)
+      toast.success("Login successful!")
+      navigate("/")
+    } catch (error: any) {
+      if (error.response?.status === 400 && error.response?.data?.detail?.includes("Role")) {
+        // New user trying to login — redirect to signup
+        toast.error("No account found. Please sign up first.")
+        navigate("/signup")
+      } else {
+        toast.error(error.response?.data?.detail || "Google login failed")
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     console.log("Form submitted with data:", formData) // Debug log
@@ -50,7 +74,7 @@ export default function Login() {
         console.log("Sending request with:", loginData) // Debug log
 
         // Set the correct headers
-        const response = await axios.post("http://localhost:8000/token", 
+        const response = await apiClient.post<{ access_token: string }>("/token",
           new URLSearchParams({
             username: formData.email,
             password: formData.password
@@ -273,16 +297,46 @@ export default function Login() {
               </Button>
             </motion.div>
 
-            <motion.p 
+            {/* Divider */}
+            <motion.div
+              className="flex items-center gap-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.65 }}
+            >
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-sm text-gray-400">or</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </motion.div>
+
+            {/* Google Sign-In */}
+            <motion.div
+              className="flex justify-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={() => toast.error("Google login failed")}
+                size="large"
+                width="100%"
+                text="signin_with"
+                shape="rectangular"
+                theme="outline"
+              />
+            </motion.div>
+
+            <motion.p
               className="text-center text-gray-600"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.7 }}
+              transition={{ duration: 0.5, delay: 0.75 }}
             >
               Don't have an account?{" "}
-              <a href="/signup" className="text-[#ff7757] hover:text-[#1a2352] transition-colors">
+              <Link to="/signup" className="text-[#ff7757] hover:text-[#1a2352] transition-colors">
                 Sign up
-              </a>
+              </Link>
             </motion.p>
           </form>
         </motion.div>

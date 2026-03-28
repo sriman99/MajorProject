@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <rect width="100" height="100" rx="8" fill="#EFF6FF"/>
+  <rect x="20" y="30" width="60" height="50" rx="4" fill="#3B82F6"/>
+  <rect x="35" y="20" width="30" height="20" rx="2" fill="#2563EB"/>
+  <!-- Windows -->
+  <rect x="28" y="40" width="12" height="10" rx="1" fill="#fff"/>
+  <rect x="44" y="40" width="12" height="10" rx="1" fill="#fff"/>
+  <rect x="60" y="40" width="12" height="10" rx="1" fill="#fff"/>
+  <rect x="28" y="55" width="12" height="10" rx="1" fill="#fff"/>
+  <rect x="60" y="55" width="12" height="10" rx="1" fill="#fff"/>
+  <!-- Door -->
+  <rect x="44" y="55" width="12" height="25" rx="1" fill="#1D4ED8"/>
+  <!-- Cross -->
+  <rect x="47" y="24" width="6" height="14" fill="#fff"/>
+  <rect x="43" y="28" width="14" height="6" fill="#fff"/>
+</svg>

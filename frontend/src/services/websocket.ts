@@ -10,8 +10,8 @@ class WebSocketService {
   private maxReconnectAttempts = 3;
   private token: string | null = null;
   private isDevelopment = window.location.hostname === 'localhost';
-  private apiUrl = 'http://localhost:8000';
-  private wsUrl = 'ws://localhost:8000';
+  private apiUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+  private wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
   private mockModeCallbacks: ((mockMode: boolean) => void)[] = [];
   private isConnecting = false; // Flag to prevent multiple connection attempts
   private connectionState: 'disconnected' | 'connecting' | 'connected' | 'error' = 'disconnected';

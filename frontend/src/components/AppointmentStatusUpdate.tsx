@@ -10,7 +10,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog"
 import { Check, X, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react"
-import axios from "axios"
+import apiClient from "@/services/api"
 import { toast } from "sonner"
 
 interface AppointmentStatusUpdateProps {
@@ -44,8 +44,8 @@ export function AppointmentStatusUpdate({
         return
       }
 
-      const response = await axios.put(
-        `http://localhost:8000/appointments/${appointmentId}?status=${newStatus}`, 
+      const response = await apiClient.put(
+        `/appointments/${appointmentId}?status=${newStatus}`,
         {}, // Empty request body, since we're sending status as a query parameter
         {
           headers: {

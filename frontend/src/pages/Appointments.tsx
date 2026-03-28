@@ -3,7 +3,7 @@ import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
 import { Search, Loader2 } from "lucide-react"
 import { useState, useEffect } from "react"
-import axios from "axios"
+import apiClient from "@/services/api"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthWithFetch } from "@/hooks/useAuth"
 interface Doctor {
@@ -59,7 +59,7 @@ export default function Appointments() {
       try {
         setLoading(true)
         setError(null)
-        const response = await axios.get('http://localhost:8000/doctors')
+        const response = await apiClient.get<Doctor[]>('/doctors')
         setDoctors(response.data)
         setFilteredDoctors(response.data)
       } catch (err) {
@@ -129,7 +129,7 @@ export default function Appointments() {
     try {
       setLoading(true)
       setError(null)
-      const response = await axios.get(`http://localhost:8000/doctors?specialty=${specialty}`)
+      const response = await apiClient.get<Doctor[]>(`/doctors?specialty=${specialty}`)
       setDoctors(response.data)
       setFilteredDoctors(response.data)
     } catch (err) {
@@ -285,12 +285,12 @@ export default function Appointments() {
               </Button>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredDoctors.map((doctor) => (
-                <DoctorCard 
-                  key={doctor.id} 
+                <DoctorCard
+                  key={doctor.id}
                   {...doctor}
-                  gender={doctor.gender as "male" | "female"} 
+                  gender={doctor.gender as "male" | "female"}
                 />
               ))}
             </div>

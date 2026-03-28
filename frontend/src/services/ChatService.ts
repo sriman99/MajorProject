@@ -13,7 +13,7 @@ export class ChatService {
     private socket: WebSocket | null = null;
     private messageHandlers: ((message: Message) => void)[] = [];
 
-    constructor(private baseUrl: string = 'ws://localhost:8000') {}
+    constructor(private baseUrl: string = import.meta.env.VITE_WS_URL || 'ws://localhost:8000') {}
 
     connect(doctorId: string, userId: string, token: string): Promise<void> {
         return new Promise((resolve, reject) => {
@@ -77,7 +77,7 @@ export class ChatService {
 
     async getChatHistory(conversationId: string, token: string): Promise<Message[]> {
         try {
-            const response = await fetch(`http://localhost:8000/chat/history/${conversationId}`, {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/chat/history/${conversationId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

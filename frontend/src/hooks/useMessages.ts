@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import axios from 'axios'
+import apiClient from '@/services/api'
 import { useAuth } from './useAuth'
 import { useState, useCallback } from 'react'
 
@@ -28,7 +28,7 @@ export const useMessages = () => {
       
       try {
         const token = localStorage.getItem('access_token')
-        const response = await axios.get('http://localhost:8000/messages', {
+        const response = await apiClient.get<Message[]>('/messages', {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -86,7 +86,7 @@ export const useMessages = () => {
       if (!isLoggedIn || !user) throw new Error('You must be logged in to send messages')
       
       const token = localStorage.getItem('access_token')
-      const response = await axios.post('http://localhost:8000/messages', {
+      const response = await apiClient.post('/messages', {
         receiver_id: receiverId,
         content
       }, {
@@ -108,7 +108,7 @@ export const useMessages = () => {
       if (!isLoggedIn || !user) throw new Error('You must be logged in')
       
       const token = localStorage.getItem('access_token')
-      const response = await axios.patch(`http://localhost:8000/messages/${messageId}/read`, {}, {
+      const response = await apiClient.patch(`/messages/${messageId}/read`, {}, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -128,7 +128,7 @@ export const useMessages = () => {
       if (!isLoggedIn || !user) throw new Error('You must be logged in')
       
       const token = localStorage.getItem('access_token')
-      const response = await axios.patch('http://localhost:8000/messages/read-all', {}, {
+      const response = await apiClient.patch('/messages/read-all', {}, {
         headers: {
           Authorization: `Bearer ${token}`
         }

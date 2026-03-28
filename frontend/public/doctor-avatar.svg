@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <circle cx="50" cy="50" r="50" fill="#DBEAFE"/>
+  <circle cx="50" cy="35" r="18" fill="#3B82F6"/>
+  <ellipse cx="50" cy="85" rx="30" ry="25" fill="#3B82F6"/>
+  <!-- Stethoscope hint -->
+  <circle cx="50" cy="65" r="6" fill="#1D4ED8" stroke="#fff" stroke-width="2"/>
+</svg>

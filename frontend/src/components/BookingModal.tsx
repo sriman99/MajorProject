@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import axios from "axios"
+import apiClient from "@/services/api"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -68,7 +68,7 @@ export function BookingModal({ isOpen, onClose, doctorId, doctorName, patientId 
       console.log('Sending appointment data:', appointmentData)
       console.log('Using token:', token ? 'Token present' : 'No token')
       
-      const response = await axios.post("http://localhost:8000/appointments", appointmentData, {
+      const response = await apiClient.post("/appointments", appointmentData, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -77,24 +77,23 @@ export function BookingModal({ isOpen, onClose, doctorId, doctorName, patientId 
 
       console.log('Response received:', response.data)
 
-      if (response.status === 200) {
-        toast.success("Appointment booked successfully!")
-        onClose()
-        // Reset form
-        setDate("")
-        setTime("")
-        setReason("")
-      }
-    } catch (error) {
-      console.error("Error booking appointment:", error)
-      if (axios.isAxiosError(error)) {
-        if (error.response?.status === 401) {
+      // Axios throws for non-2xx, so if we get here it's a success
+      toast.success("Appointment booked successfully! You will receive a confirmation email shortly.")
+      onClose()
+      // Reset form
+      setDate("")
+      setTime("")
+      setReason("")
+    } catch (err: any) {
+      console.error("Error booking appointment:", err)
+      if (err.response) {
+        if (err.response.status === 401) {
           toast.error("Please log in to book an appointment")
-        } else if (error.response?.status === 422) {
-          console.error("Validation error details:", error.response.data)
+        } else if (err.response.status === 422) {
+          console.error("Validation error details:", err.response.data)
           toast.error("Invalid appointment data. Please check your input.")
-        } else if (error.response?.status === 400) {
-          toast.error(error.response.data.detail || "Failed to book appointment")
+        } else if (err.response.status === 400) {
+          toast.error(err.response.data?.detail || "Failed to book appointment")
         } else {
           toast.error("Failed to book appointment. Please try again.")
         }

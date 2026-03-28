@@ -86,8 +86,9 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onClo
           </h4>
           <button
             onClick={handleDelete}
-            className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            className="flex-shrink-0 p-1 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors z-10"
             aria-label="Delete notification"
+            type="button"
           >
             <X className="h-4 w-4" />
           </button>

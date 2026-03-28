@@ -9,6 +9,7 @@ export type ToastOptions = ToastProps & {
   id?: string
   action?: ToastActionElement
   duration?: number
+  dismissed?: boolean
 }
 
 type ToastState = {
@@ -147,24 +148,37 @@ export function useToast(): {
 export function Toaster() {
   const { toasts, dismiss } = useToast()
 
+  // Auto-dismiss toasts after their duration
+  React.useEffect(() => {
+    toasts.forEach((toast) => {
+      if (toast.id && toast.duration && !toast.dismissed) {
+        const timer = setTimeout(() => {
+          dismiss(toast.id!)
+        }, toast.duration)
+
+        return () => clearTimeout(timer)
+      }
+    })
+  }, [toasts, dismiss])
+
   return (
-    <div className="fixed top-0 right-0 z-[100] flex flex-col gap-2 w-full max-w-[420px] p-4">
-      {toasts.map(({ id, title, description, variant, ...props }) => (
+    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-full max-w-[420px]">
+      {toasts.filter(t => !t.dismissed).map(({ id, title, description, variant, duration, ...props }) => (
         <div
           key={id}
-          className={`group relative flex w-full items-center justify-between space-x-2 overflow-hidden rounded-md border p-4 shadow-md transition-all ${
+          className={`group relative flex w-full items-center justify-between space-x-2 overflow-hidden rounded-lg border p-4 shadow-lg transition-all animate-in slide-in-from-right-full ${
             variant === "destructive"
-              ? "border-destructive bg-destructive text-destructive-foreground"
-              : "bg-background border-border"
+              ? "border-red-200 bg-red-50 text-red-900"
+              : "bg-white border-gray-200 text-gray-900"
           }`}
           {...props}
         >
           <div className="flex flex-col gap-1">
-            {title && <p className="font-medium">{title}</p>}
-            {description && <p className="text-sm text-muted-foreground">{description}</p>}
+            {title && <p className="font-semibold">{title}</p>}
+            {description && <p className="text-sm opacity-90">{description}</p>}
           </div>
           <button
-            className="inline-flex shrink-0 items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none"
+            className="inline-flex shrink-0 items-center justify-center rounded-full p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
             onClick={() => dismiss(id!)}
           >
             <X className="h-4 w-4" />

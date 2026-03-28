@@ -85,78 +85,81 @@ export function DoctorCard({
 
   return (
     <>
-      <Card className="hover:shadow-lg transition-all duration-300">
-        <CardHeader className="flex flex-row items-start gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={image_url} alt={name} />
-            <AvatarFallback>{name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+      <Card className="hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+        <CardHeader className="flex flex-col items-center text-center pb-2">
+          <Avatar className="h-24 w-24 mb-3 ring-4 ring-[#008080]/10">
+            <AvatarImage src={image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff&size=200`} alt={name} />
+            <AvatarFallback className="text-xl">{name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
           </Avatar>
-          <div className="flex-1">
-            <CardTitle className="text-2xl">{name}</CardTitle>
-            <p className="text-sm text-gray-500 mt-1">{experience}</p>
-            <p className="text-sm text-gray-500">{qualifications}</p>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {specialties.map((specialty) => (
-                <Badge key={specialty} variant="secondary">
-                  {specialty}
-                </Badge>
-              ))}
-            </div>
+          <CardTitle className="text-xl text-[#1a2352]">{name}</CardTitle>
+          <p className="text-sm text-[#008080] font-medium mt-1">{experience}</p>
+          <p className="text-xs text-gray-500">{qualifications}</p>
+          <div className="flex flex-wrap justify-center gap-1.5 mt-3">
+            {specialties.slice(0, 2).map((specialty) => (
+              <Badge key={specialty} variant="secondary" className="text-xs bg-[#008080]/10 text-[#008080] hover:bg-[#008080]/20">
+                {specialty}
+              </Badge>
+            ))}
+            {specialties.length > 2 && (
+              <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+                +{specialties.length - 2}
+              </Badge>
+            )}
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="flex-1 flex flex-col pt-2">
+          <div className="space-y-2 flex-1">
             {/* Languages */}
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Languages className="h-4 w-4" />
-              <span>{languages.join(', ')}</span>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Languages className="h-3.5 w-3.5 text-[#008080]" />
+              <span className="truncate">{languages.join(', ')}</span>
             </div>
 
             {/* Locations */}
             {locations.length > 0 && (
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <MapPin className="h-4 w-4" />
-                <span>{locations[0].name}</span>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <MapPin className="h-3.5 w-3.5 text-[#008080]" />
+                <span className="truncate">{locations[0].name}</span>
               </div>
             )}
 
             {/* Timings */}
             {timings.hours && (
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <Clock className="h-4 w-4" />
-                <span>{timings.hours} ({timings.days})</span>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <Clock className="h-3.5 w-3.5 text-[#008080]" />
+                <span className="truncate">{timings.hours} ({timings.days})</span>
               </div>
             )}
+          </div>
 
-            {/* Actions */}
-            <div className="flex gap-2 pt-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex-1"
-                onClick={handleStartChat}
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Chat
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="flex-1"
-                onClick={handleStartVideoCall}
-              >
-                <Video className="h-4 w-4 mr-2" />
-                Video Call
-              </Button>
-              <Button 
-                size="sm" 
-                className="flex-1" 
-                onClick={handleBookAppointment}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Book
-              </Button>
-            </div>
+          {/* Actions */}
+          <div className="grid grid-cols-3 gap-2 pt-4 mt-auto border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex flex-col items-center py-2 h-auto text-xs hover:bg-[#008080]/5 hover:text-[#008080] hover:border-[#008080]"
+              onClick={handleStartChat}
+            >
+              <MessageSquare className="h-4 w-4 mb-1" />
+              Chat
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex flex-col items-center py-2 h-auto text-xs hover:bg-[#008080]/5 hover:text-[#008080] hover:border-[#008080]"
+              onClick={handleStartVideoCall}
+            >
+              <Video className="h-4 w-4 mb-1" />
+              Video
+            </Button>
+            <Button
+              size="sm"
+              className="flex flex-col items-center py-2 h-auto text-xs bg-[#008080] hover:bg-[#006666]"
+              onClick={handleBookAppointment}
+            >
+              <Calendar className="h-4 w-4 mb-1" />
+              Book
+            </Button>
           </div>
         </CardContent>
       </Card>

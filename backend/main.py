@@ -20,6 +20,8 @@ from middleware import WebSocketAuthMiddleware
 from cryptography.fernet import Fernet
 import base64
 import hashlib
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -51,6 +53,9 @@ MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 600
+
+# Google OAuth
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -141,6 +146,10 @@ class UserWithDoctorProfile(User):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class GoogleAuthRequest(BaseModel):
+    credential: str
+    role: Optional[str] = None  # Required for new users (signup), optional for existing (login)
 
 class TokenData(BaseModel):
     username: Optional[str] = None
@@ -510,6 +519,11 @@ async def signup(request: Request, user: UserCreate):
     if not user_dict.get("username"):
         user_dict["username"] = user_dict["email"]
 
+    # Set default avatar using ui-avatars.com with user's name
+    from urllib.parse import quote
+    avatar_bg = "ff7757" if user.role == "user" else "3b82f6" if user.role == "doctor" else "8b5cf6"
+    user_dict["avatar_url"] = f"https://ui-avatars.com/api/?name={quote(user.full_name)}&background={avatar_bg}&color=fff&size=200&bold=true"
+
     await users_collection.insert_one(user_dict)
 
     # If user is a doctor, create a doctor profile
@@ -527,6 +541,8 @@ async def signup(request: Request, user: UserCreate):
         doctor_dict["id"] = str(uuid.uuid4())
         doctor_dict["locations"] = []
         doctor_dict["timings"] = {"hours": "", "days": ""}
+        # Set default avatar using ui-avatars.com with doctor's name (quote already imported above)
+        doctor_dict["image_url"] = f"https://ui-avatars.com/api/?name={quote(user.full_name)}&background=3b82f6&color=fff&size=200&bold=true"
         await doctors_collection.insert_one(doctor_dict)
 
     # Send welcome email (non-blocking)
@@ -569,6 +585,96 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
     access_token = create_access_token(
         data={"sub": user["email"], "role": user["role"]},
         expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/auth/google", response_model=Token)
+async def google_auth(request: Request, body: GoogleAuthRequest):
+    """Authenticate or register a user via Google OAuth"""
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=500, detail="Google OAuth not configured")
+
+    # Verify the Google token
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            body.credential,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID
+        )
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+
+    email = idinfo.get("email")
+    full_name = idinfo.get("name", "")
+    picture = idinfo.get("picture", "")
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email not provided by Google")
+
+    users_collection = get_users_collection()
+    doctors_collection = get_doctors_collection()
+
+    # Check if user already exists
+    existing_user = await users_collection.find_one({"email": email})
+
+    if existing_user:
+        # Existing user — just log them in
+        access_token = create_access_token(
+            data={"sub": existing_user["email"], "role": existing_user["role"]},
+            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        )
+        return {"access_token": access_token, "token_type": "bearer"}
+
+    # New user — role is required
+    if not body.role or body.role not in ("user", "doctor"):
+        raise HTTPException(status_code=400, detail="Role is required for new Google sign-ups")
+
+    # Create new user (no password for Google users)
+    from urllib.parse import quote
+    avatar_bg = "ff7757" if body.role == "user" else "3b82f6"
+    user_id = str(uuid.uuid4())
+
+    user_dict = {
+        "id": user_id,
+        "email": email,
+        "full_name": full_name,
+        "phone": "",
+        "role": body.role,
+        "password": "",  # No password for Google OAuth users
+        "is_active": True,
+        "username": email,
+        "avatar_url": picture or f"https://ui-avatars.com/api/?name={quote(full_name)}&background={avatar_bg}&color=fff&size=200&bold=true",
+        "auth_provider": "google",
+    }
+
+    await users_collection.insert_one(user_dict)
+
+    # If doctor, create doctor profile
+    if body.role == "doctor":
+        doctor_dict = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "name": full_name,
+            "experience": "",
+            "qualifications": "",
+            "languages": [],
+            "specialties": [],
+            "gender": "other",
+            "locations": [],
+            "timings": {"hours": "", "days": ""},
+            "image_url": picture or f"https://ui-avatars.com/api/?name={quote(full_name)}&background=3b82f6&color=fff&size=200&bold=true",
+        }
+        await doctors_collection.insert_one(doctor_dict)
+
+    # Send welcome email
+    try:
+        send_welcome_email(email, full_name)
+    except Exception as e:
+        print(f"Failed to send welcome email: {str(e)}")
+
+    access_token = create_access_token(
+        data={"sub": email, "role": body.role},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -1589,22 +1695,78 @@ async def upload_analysis(
         content = await file.read()
         buffer.write(content)
 
-    # In a real app, you would process the file here
-    # For now, we'll just create a dummy analysis
-    analysis_dict = {
-        "id": str(uuid.uuid4()),
-        "user_id": current_user["id"],
-        "file_path": file_path,
-        "analysis_type": "file",
-        "status": "normal",
-        "message": "Breathing pattern analysis complete",
-        "details": [
-            "Normal respiratory rate detected",
-            "No abnormal sounds identified",
-            "Regular breathing pattern observed"
-        ],
-        "created_at": datetime.utcnow().isoformat()
-    }
+    # Call the ML model for actual analysis
+    ML_SERVICE_URL = os.getenv("ML_SERVICE_URL", "http://localhost:8001/predict")
+
+    try:
+        # Send file to ML service for prediction
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            with open(file_path, "rb") as audio_file:
+                files = {'audio_file': (file.filename, audio_file, 'audio/wav')}
+                response = await client.post(ML_SERVICE_URL, files=files)
+
+            if response.status_code == 200:
+                ml_result = response.json()
+
+                # Map ML result to analysis status
+                confidence = ml_result.get("confidence", 0)
+                disease = ml_result.get("disease", "Unknown")
+                predictions = ml_result.get("predictions", {})
+
+                # Determine status based on confidence and disease
+                if disease.lower() in ["healthy", "normal"] or confidence < 0.3:
+                    status = "normal"
+                    message = "Your breathing patterns appear normal"
+                elif confidence < 0.6:
+                    status = "warning"
+                    message = f"Possible signs of {disease} detected. Consider consulting a doctor."
+                else:
+                    status = "critical"
+                    message = f"Strong indicators of {disease} detected. Please consult a doctor."
+
+                # Create detailed analysis from ML predictions
+                details = [
+                    f"Detected condition: {disease}",
+                    f"Confidence level: {confidence*100:.1f}%",
+                ]
+                # Add top predictions
+                sorted_predictions = sorted(predictions.items(), key=lambda x: x[1], reverse=True)[:3]
+                for condition, prob in sorted_predictions:
+                    details.append(f"{condition}: {prob*100:.1f}%")
+
+                analysis_dict = {
+                    "id": str(uuid.uuid4()),
+                    "user_id": current_user["id"],
+                    "file_path": file_path,
+                    "analysis_type": "file",
+                    "status": status,
+                    "message": message,
+                    "details": details,
+                    "disease_type": disease,
+                    "confidence": confidence,
+                    "ml_result": ml_result,
+                    "created_at": datetime.utcnow().isoformat()
+                }
+            else:
+                raise Exception(f"ML service returned status {response.status_code}")
+
+    except Exception as e:
+        print(f"ML service error: {str(e)}, using fallback analysis")
+        # Fallback to basic analysis if ML service fails
+        analysis_dict = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user["id"],
+            "file_path": file_path,
+            "analysis_type": "file",
+            "status": "warning",
+            "message": "Analysis completed with limited data. ML service unavailable.",
+            "details": [
+                "Unable to perform full ML analysis",
+                "Basic audio file received successfully",
+                "Please try again or consult a doctor for accurate diagnosis"
+            ],
+            "created_at": datetime.utcnow().isoformat()
+        }
 
     await analysis_collection.insert_one(analysis_dict)
 

@@ -28,7 +28,7 @@ class WebSocketService {
     // Initialize event listeners
     window.addEventListener('online', this.handleOnline);
     window.addEventListener('offline', this.handleOffline);
-    this.baseUrl = import.meta.env.VITE_API_URL || "localhost:8000";
+    this.baseUrl = import.meta.env.VITE_WS_URL || "ws://localhost:8000";
     console.log("WebSocket service initialized with base URL:", this.baseUrl);
   }
 

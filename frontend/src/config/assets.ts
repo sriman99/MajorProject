@@ -39,5 +39,17 @@ export const assets = {
     image2:"/Ai_analysis.png",
     image3:"/medical_report.jpg",
     image4:"/seggestion.jpg"
+  },
+  avatars: {
+    default: "/default-avatar.svg",
+    doctorMale: "/doctor-male.svg",
+    doctorFemale: "/doctor-female.svg",
+    patient: "/patient-avatar.svg",
+    doctor: "/doctor-avatar.svg",
+  },
+  hospitals: {
+    hospital1: "/hospital-1.svg",
+    hospital2: "/hospital-2.svg",
+    hospital3: "/hospital-3.svg",
   }
 } 

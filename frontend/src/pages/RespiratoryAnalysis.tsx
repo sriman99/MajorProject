@@ -175,7 +175,7 @@ export default function RespiratoryAnalysis() {
       })
 
       // Send the file to the backend with authentication token
-      const response = await fetch("http://localhost:8000/analysis/upload", {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/analysis/upload`, {
         method: "POST",
         body: formData,
         headers: {
@@ -598,12 +598,12 @@ function AnalysisResults({
                         onClick={() => navigate(`/appointments?doctor=${doctor.id}`)}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                            {doctor.image_url ? (
-                              <img src={doctor.image_url} alt={doctor.name} className="w-12 h-12 rounded-full object-cover" />
-                            ) : (
-                              <Stethoscope className="w-6 h-6 text-gray-400" />
-                            )}
+                          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <img
+                              src={doctor.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor.name)}&background=3b82f6&color=fff&size=100`}
+                              alt={doctor.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-[#1a2352] truncate">{doctor.name}</h4>
