@@ -142,7 +142,7 @@ export default function Appointments() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8fafc]">
+      <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-12">
           <div className="mb-8">
             <Skeleton className="h-10 w-96 mb-2" />
@@ -165,10 +165,10 @@ export default function Appointments() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-muted-foreground mb-4">{error}</p>
           <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </div>
@@ -176,11 +176,11 @@ export default function Appointments() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-[#1a2352] mb-2">Find A Doctor</h1>
-          <p className="text-xl text-gray-600">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Find A Doctor</h1>
+          <p className="text-xl text-muted-foreground">
             Connect with Trusted Healthcare Experts for Personalized Care
           </p>
         </div>
@@ -204,11 +204,11 @@ export default function Appointments() {
         <div className="flex gap-8">
           {/* Filters Section - hidden on mobile */}
           <div className="hidden lg:block w-72 flex-shrink-0">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-[#1a2352] mb-6">Filters</h2>
+            <div className="bg-card rounded-lg p-6 shadow-sm">
+              <h2 className="text-xl font-bold text-foreground mb-6">Filters</h2>
               
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-[#1a2352] mb-4">Gender</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Gender</h3>
                 <div className="space-y-3">
                   {["Any", "Male", "Female"].map((gender) => (
                     <label key={gender} className="flex items-center gap-2">
@@ -220,14 +220,14 @@ export default function Appointments() {
                         onChange={(e) => setSelectedGender(e.target.value)}
                         className="text-[#008080]" 
                       />
-                      <span className="text-gray-700">{gender}</span>
+                      <span className="text-foreground">{gender}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-[#1a2352] mb-4">Specialities</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Specialities</h3>
                 <div className="relative">
                   <Input
                     type="text"
@@ -253,14 +253,14 @@ export default function Appointments() {
                         }}
                         className="rounded border-gray-300" 
                       />
-                      <span className="text-gray-700">{specialty}</span>
+                      <span className="text-foreground">{specialty}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-[#1a2352] mb-4">Select City</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-4">Select City</h3>
                 <Input
                   type="text"
                   placeholder="Search City"
@@ -275,10 +275,10 @@ export default function Appointments() {
           {/* Doctors List */}
           <div className="flex-1">
             <div className="flex justify-between items-center mb-4">
-              <p className="text-gray-600">{filteredDoctors.length} doctors found</p>
+              <p className="text-muted-foreground">{filteredDoctors.length} doctors found</p>
               <Button
                 variant="outline"
-                className="border-gray-300 text-gray-700"
+                className="border-gray-300 text-foreground"
                 onClick={() => setSortBy(sortBy === "name" ? "experience" : "name")}
               >
                 Sort by {sortBy === "name" ? "Experience" : "Name"} ▼
@@ -297,7 +297,7 @@ export default function Appointments() {
 
             {filteredDoctors.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">No doctors found matching your criteria</p>
+                <p className="text-muted-foreground text-lg">No doctors found matching your criteria</p>
               </div>
             )}
           </div>

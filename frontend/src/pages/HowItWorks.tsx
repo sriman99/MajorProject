@@ -50,7 +50,7 @@ export default function HowItWorks() {
   };
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-20">
+    <div className="min-h-screen bg-gradient-to-b from-muted to-background py-20">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -63,7 +63,7 @@ export default function HowItWorks() {
               How It Works
             </span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Our four-step process makes respiratory analysis simple, accurate, and accessible
           </p>
         </motion.div>
@@ -76,7 +76,7 @@ export default function HowItWorks() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true }}
-              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 max-w-md mx-auto w-full group"
+              className="bg-card rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 max-w-md mx-auto w-full group"
             >
               <div className="relative h-56 overflow-hidden">
                 <img
@@ -84,14 +84,14 @@ export default function HowItWorks() {
                   alt={step.title}
                   className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute top-4 left-4 bg-white rounded-full p-3 shadow-lg">
+                <div className="absolute top-4 left-4 bg-card rounded-full p-3 shadow-lg">
                   <step.icon className="w-6 h-6 text-[#ff7757]" />
                 </div>
                 <div className="absolute top-4 right-4">
                   <Button 
                     size="sm"
                     variant="outline"
-                    className="bg-white/80 backdrop-blur-sm hover:bg-white"
+                    className="bg-card/80 backdrop-blur-sm hover:bg-card"
                     onClick={() => openModal(index)}
                   >
                     <Info className="w-4 h-4 mr-1" /> Learn More
@@ -99,14 +99,14 @@ export default function HowItWorks() {
                 </div>
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
+                <h3 className="text-xl font-semibold text-foreground mb-3">{step.title}</h3>
+                <p className="text-muted-foreground">{step.description}</p>
                 
                 {/* View Details Button */}
                 <div className="mt-4">
                   <Button 
                     variant="ghost" 
-                    className="text-[#1a2352] hover:text-[#ff7757] p-0 font-medium"
+                    className="text-foreground hover:text-[#ff7757] p-0 font-medium"
                     onClick={() => openModal(index)}
                   >
                     View Detailed Explanation

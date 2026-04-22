@@ -17,17 +17,17 @@ export function Mission() {
                 Mission
               </span>
             </div>
-            <h2 className="text-5xl font-bold text-[#1a2352] leading-tight">
+            <h2 className="text-5xl font-bold text-foreground leading-tight">
               At NeumoAI, We Breathe Innovation Into Healthcare.
             </h2>
-            <p className="text-xl text-gray-600 leading-relaxed">
+            <p className="text-xl text-muted-foreground leading-relaxed">
               Our mission is to harness the power of artificial intelligence to revolutionize respiratory diagnostics. By turning breath into data, and data into diagnosis, we empower people to detect diseases early, consult seamlessly with doctors, and take control of their well-being — anytime, anywhere.
             </p>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-muted-foreground">
               We strive to make healthcare more{" "}
-              <span className="font-semibold text-[#1a2352]">accessible</span>,{" "}
-              <span className="font-semibold text-[#1a2352]">intelligent</span>, and deeply{" "}
-              <span className="font-semibold text-[#1a2352]">human</span>.
+              <span className="font-semibold text-foreground">accessible</span>,{" "}
+              <span className="font-semibold text-foreground">intelligent</span>, and deeply{" "}
+              <span className="font-semibold text-foreground">human</span>.
             </p>
             <div className="flex space-x-4">
               
@@ -47,7 +47,7 @@ export function Mission() {
                 alt="Meditation Practice"
                 className="rounded-2xl shadow-2xl transform hover:scale-105 transition-transform duration-500 w-full"
               />
-              <div className="absolute -bottom-8 -right-8 bg-white p-4 rounded-2xl shadow-xl">
+              <div className="absolute -bottom-8 -right-8 bg-card p-4 rounded-2xl shadow-xl">
                 <img src="/67f907e9bd92c5e1c7e6bf07_3.svg" alt="" className="w-12 h-12" />
               </div>
             </div>

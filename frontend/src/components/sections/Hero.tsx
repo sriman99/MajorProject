@@ -17,7 +17,7 @@ export function Hero() {
           <span className="text-[#ff7757]">Respiratory</span> Health<br />
           Platform
         </h1>
-        <p className="text-xl text-gray-600 max-w-lg animate-fade-in-delay leading-relaxed">
+        <p className="text-xl text-muted-foreground max-w-lg animate-fade-in-delay leading-relaxed">
           Detect respiratory issues through sound, consult doctors online, and track your health with our cutting-edge AI technology.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-delay-2">
@@ -28,12 +28,12 @@ export function Hero() {
             </Button>
           </Link>
           <Link to="/appointments" className="flex-1">
-            <Button variant="outline" className="w-full text-[#1a2352] border-2 border-[#ff7757] text-lg px-8 py-6 rounded-4xl hover:bg-[#ff7757]/10 hover:text-[#ff7757] hover:scale-102 transition-all duration-300">
+            <Button variant="outline" className="w-full text-foreground border-2 border-[#ff7757] text-lg px-8 py-6 rounded-4xl hover:bg-[#ff7757]/10 hover:text-[#ff7757] hover:scale-102 transition-all duration-300">
               Book Appointment
             </Button>
           </Link>
           <Link to="/hospitals" className="flex-1">
-            <Button variant="outline" className="w-full text-[#1a2352] border-2 border-[#ff7757] text-lg px-8 py-6 rounded-4xl hover:bg-[#ff7757]/10 hover:text-[#ff7757] hover:scale-102 transition-all duration-300">
+            <Button variant="outline" className="w-full text-foreground border-2 border-[#ff7757] text-lg px-8 py-6 rounded-4xl hover:bg-[#ff7757]/10 hover:text-[#ff7757] hover:scale-102 transition-all duration-300">
               Find Hospital
             </Button>
           </Link>

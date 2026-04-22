@@ -208,7 +208,7 @@ export default function AppointmentManagement() {
         <div className="flex flex-col items-center justify-center h-[60vh]">
           <AlertCircle className="h-16 w-16 text-red-500 mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Appointments</h3>
-          <p className="text-gray-500 mb-4">{error}</p>
+          <p className="text-muted-foreground mb-4">{error}</p>
           <Button onClick={fetchAppointments}>Try Again</Button>
         </div>
       </DashboardLayout>
@@ -292,7 +292,7 @@ export default function AppointmentManagement() {
                         </div>
                       </div>
                       <div className="space-y-3 flex flex-col items-end justify-end">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                           Created: {new Date(appointment.created_at).toLocaleDateString()} at {' '}
                           {new Date(appointment.created_at).toLocaleTimeString()}
                         </p>
@@ -326,10 +326,10 @@ export default function AppointmentManagement() {
                 </Card>
               ))
             ) : (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <div className="text-center py-12 bg-muted rounded-lg">
                 <Clock className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-4 text-lg font-semibold text-gray-900">No appointments found</h3>
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="mt-2 text-sm text-muted-foreground">
                   {activeTab === "all"
                     ? "You don't have any appointments yet."
                     : `You don't have any ${activeTab} appointments.`}
@@ -379,12 +379,12 @@ export default function AppointmentManagement() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Consultation Fee</span>
+                <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                  <span className="text-sm text-muted-foreground">Consultation Fee</span>
                   <span className="text-lg font-bold">₹500</span>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Platform Fee</span>
+                <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+                  <span className="text-sm text-muted-foreground">Platform Fee</span>
                   <span className="text-lg font-bold">₹0</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between items-center">

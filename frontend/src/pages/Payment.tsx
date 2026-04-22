@@ -165,7 +165,7 @@ export default function Payment() {
                 <CheckCircle2 className="w-20 h-20 text-green-600 animate-bounce" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Your payment of Rs. {amount} has been processed successfully.
               </p>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
@@ -176,7 +176,7 @@ export default function Payment() {
                   <strong>Payment Method:</strong> {paymentMethod.toUpperCase()}
                 </p>
               </div>
-              <p className="text-sm text-gray-500">Redirecting to payment history...</p>
+              <p className="text-sm text-muted-foreground">Redirecting to payment history...</p>
             </div>
           </CardContent>
         </Card>
@@ -189,7 +189,7 @@ export default function Payment() {
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Payment</h1>
-          <p className="text-gray-600">Secure payment for your appointment</p>
+          <p className="text-muted-foreground">Secure payment for your appointment</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -203,18 +203,18 @@ export default function Payment() {
                 {appointment && (
                   <>
                     <div className="border-b pb-4">
-                      <p className="text-sm text-gray-600">Appointment</p>
+                      <p className="text-sm text-muted-foreground">Appointment</p>
                       <p className="font-medium">{appointment.date}</p>
-                      <p className="text-sm text-gray-600">{appointment.time}</p>
+                      <p className="text-sm text-muted-foreground">{appointment.time}</p>
                     </div>
                     <div className="border-b pb-4">
-                      <p className="text-sm text-gray-600">Reason</p>
+                      <p className="text-sm text-muted-foreground">Reason</p>
                       <p className="font-medium">{appointment.reason}</p>
                     </div>
                   </>
                 )}
                 <div className="border-b pb-4">
-                  <p className="text-sm text-gray-600">Consultation Fee</p>
+                  <p className="text-sm text-muted-foreground">Consultation Fee</p>
                   <p className="font-medium">Rs. {amount}</p>
                 </div>
                 <div className="pt-2">
@@ -331,7 +331,7 @@ export default function Payment() {
                         value={upiId}
                         onChange={(e) => setUpiId(e.target.value)}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Enter your UPI ID (e.g., yourname@paytm, yourname@googlepay)
                       </p>
                     </div>
@@ -375,7 +375,7 @@ export default function Payment() {
                       `Pay Rs. ${amount}`
                     )}
                   </Button>
-                  <p className="text-xs text-center text-gray-500 mt-3">
+                  <p className="text-xs text-center text-muted-foreground mt-3">
                     By proceeding, you agree to our terms and conditions. This is a mock payment
                     and no actual transaction will occur.
                   </p>

@@ -9,7 +9,7 @@ export const StepOneDetails = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div className="bg-gray-50 p-3 rounded-lg">
         <h4 className="text-xs font-medium flex items-center gap-1.5 mb-1.5">
-          <Volume2 className="w-3 h-3 text-[#1a2352]" />
+          <Volume2 className="w-3 h-3 text-foreground" />
           Environment Requirements
         </h4>
         <ul className="space-y-1 text-xs text-gray-600">
@@ -22,7 +22,7 @@ export const StepOneDetails = () => (
       
       <div className="bg-gray-50 p-3 rounded-lg">
         <h4 className="text-xs font-medium flex items-center gap-1.5 mb-1.5">
-          <Activity className="w-3 h-3 text-[#1a2352]" />
+          <Activity className="w-3 h-3 text-foreground" />
           Breathing Technique
         </h4>
         <ul className="space-y-1 text-xs text-gray-600">
@@ -95,7 +95,7 @@ export const StepThreeDetails = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div className="bg-gray-50 p-3 rounded-lg">
         <h4 className="text-xs font-medium flex items-center gap-1.5 mb-1.5">
-          <BarChart className="w-3 h-3 text-[#1a2352]" />
+          <BarChart className="w-3 h-3 text-foreground" />
           Visualizations
         </h4>
         <ul className="space-y-1 text-xs text-gray-600">
@@ -108,7 +108,7 @@ export const StepThreeDetails = () => (
       
       <div className="bg-gray-50 p-3 rounded-lg">
         <h4 className="text-xs font-medium flex items-center gap-1.5 mb-1.5">
-          <ListChecks className="w-3 h-3 text-[#1a2352]" />
+          <ListChecks className="w-3 h-3 text-foreground" />
           Assessment Metrics
         </h4>
         <ul className="space-y-1 text-xs text-gray-600">
@@ -181,7 +181,7 @@ export const StepFourDetails = () => (
     
     <div className="bg-gray-50 p-3 rounded-lg">
       <h4 className="text-xs font-medium flex items-center gap-1.5 mb-1.5">
-        <Share2 className="w-3 h-3 text-[#1a2352]" />
+        <Share2 className="w-3 h-3 text-foreground" />
         For Your Appointment
       </h4>
       <ul className="space-y-1 text-xs text-gray-600">

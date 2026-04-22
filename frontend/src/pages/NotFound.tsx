@@ -5,7 +5,7 @@ import { assets } from "@/config/assets"
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 relative overflow-hidden flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted relative overflow-hidden flex items-center justify-center">
       {/* Decorative elements */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.img 
@@ -66,8 +66,8 @@ export default function NotFound() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="space-y-4"
           >
-            <h2 className="text-4xl font-bold text-[#1a2352]">Page Not Found</h2>
-            <p className="text-xl text-gray-600 max-w-md mx-auto">
+            <h2 className="text-4xl font-bold text-foreground">Page Not Found</h2>
+            <p className="text-xl text-muted-foreground max-w-md mx-auto">
               Oops! It seems like the page you're looking for has taken a deep breath and wandered off.
             </p>
           </motion.div>

@@ -73,7 +73,7 @@ export function StepModal({
           />
           
           <motion.div 
-            className="z-50 w-full max-w-md md:max-w-2xl rounded-lg bg-white p-0 shadow-lg overflow-y-auto max-h-[90vh]"
+            className="z-50 w-full max-w-md md:max-w-2xl rounded-lg bg-card p-0 shadow-lg overflow-y-auto max-h-[90vh]"
             variants={modalVariants}
             initial="hidden"
             animate="visible"
@@ -93,13 +93,13 @@ export function StepModal({
                     variant="ghost" 
                     size="icon" 
                     onClick={onClose} 
-                    className="rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm h-8 w-8"
+                    className="rounded-full bg-card/20 text-white hover:bg-card/30 backdrop-blur-sm h-8 w-8"
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="absolute bottom-3 left-3 flex items-center">
-                  <div className="bg-white rounded-full p-2 shadow-lg mr-2">
+                  <div className="bg-card rounded-full p-2 shadow-lg mr-2">
                     <Icon className="w-5 h-5 text-[#ff7757]" />
                   </div>
                   <h2 className="text-lg md:text-xl font-bold text-white">

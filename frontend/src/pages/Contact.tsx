@@ -6,11 +6,11 @@ import { Mail, Phone, MapPin, Clock } from "lucide-react"
 
 export default function Contact() {
   return (
-    <div className="min-h-screen bg-gray-100 py-12 pl-5 pr-5">
+    <div className="min-h-screen bg-background py-12 pl-5 pr-5">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Contact Us</h1>
-          <p className="text-lg text-gray-600">Get in touch with our team for any questions or support</p>
+          <h1 className="text-4xl font-bold text-foreground mb-4">Contact Us</h1>
+          <p className="text-lg text-muted-foreground">Get in touch with our team for any questions or support</p>
         </div>
 
         <div className="grid gap-8 md:grid-cols-2">
@@ -24,8 +24,8 @@ export default function Contact() {
                 <Mail className="h-6 w-6 text-blue-600 mt-1" />
                 <div>
                   <h3 className="font-medium">Email</h3>
-                  <p className="text-gray-600">support@apollohealth.com</p>
-                  <p className="text-gray-600">info@apollohealth.com</p>
+                  <p className="text-muted-foreground">support@apollohealth.com</p>
+                  <p className="text-muted-foreground">info@apollohealth.com</p>
                 </div>
               </div>
 
@@ -33,8 +33,8 @@ export default function Contact() {
                 <Phone className="h-6 w-6 text-blue-600 mt-1" />
                 <div>
                   <h3 className="font-medium">Phone</h3>
-                  <p className="text-gray-600">+1 (555) 123-4567</p>
-                  <p className="text-gray-600">+1 (555) 987-6543</p>
+                  <p className="text-muted-foreground">+1 (555) 123-4567</p>
+                  <p className="text-muted-foreground">+1 (555) 987-6543</p>
                 </div>
               </div>
 
@@ -42,9 +42,9 @@ export default function Contact() {
                 <MapPin className="h-6 w-6 text-blue-600 mt-1" />
                 <div>
                   <h3 className="font-medium">Address</h3>
-                  <p className="text-gray-600">123 Health Street</p>
-                  <p className="text-gray-600">Medical District, City</p>
-                  <p className="text-gray-600">State, ZIP Code</p>
+                  <p className="text-muted-foreground">123 Health Street</p>
+                  <p className="text-muted-foreground">Medical District, City</p>
+                  <p className="text-muted-foreground">State, ZIP Code</p>
                 </div>
               </div>
 
@@ -52,9 +52,9 @@ export default function Contact() {
                 <Clock className="h-6 w-6 text-blue-600 mt-1" />
                 <div>
                   <h3 className="font-medium">Working Hours</h3>
-                  <p className="text-gray-600">Monday - Friday: 9:00 AM - 6:00 PM</p>
-                  <p className="text-gray-600">Saturday: 10:00 AM - 4:00 PM</p>
-                  <p className="text-gray-600">Sunday: Closed</p>
+                  <p className="text-muted-foreground">Monday - Friday: 9:00 AM - 6:00 PM</p>
+                  <p className="text-muted-foreground">Saturday: 10:00 AM - 4:00 PM</p>
+                  <p className="text-muted-foreground">Sunday: Closed</p>
                 </div>
               </div>
             </CardContent>
@@ -69,13 +69,13 @@ export default function Contact() {
               <form className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
                       Name
                     </label>
                     <Input id="name" placeholder="Your name" />
                   </div>
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
                       Email
                     </label>
                     <Input id="email" type="email" placeholder="Your email" />
@@ -83,14 +83,14 @@ export default function Contact() {
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="subject" className="block text-sm font-medium text-foreground mb-1">
                     Subject
                   </label>
                   <Input id="subject" placeholder="Subject" />
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="message" className="block text-sm font-medium text-foreground mb-1">
                     Message
                   </label>
                   <Textarea

@@ -284,7 +284,7 @@ export function DoctorChat() {
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end">
         {showNotification && (
           <div 
-            className="bg-white rounded-lg shadow-lg p-3 mb-2 animate-bounce cursor-pointer"
+            className="bg-card rounded-lg shadow-lg p-3 mb-2 animate-bounce cursor-pointer"
             onClick={handleNotificationClick}
           >
             <div className="flex items-center gap-2">

@@ -37,7 +37,7 @@ const features = [
 
 export default function Features() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       {/* Hero Section with CTA */}
       <section className="py-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-tr from-[#ff7757]/5 via-transparent to-[#1a2352]/5 rounded-3xl blur-3xl -z-10" />
@@ -48,10 +48,10 @@ export default function Features() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-5xl font-bold text-[#1a2352] mb-4">
+            <h1 className="text-5xl font-bold text-foreground mb-4">
               Powerful Features for Your Respiratory Health
             </h1>
-            <p className="text-xl text-gray-600 mb-6">
+            <p className="text-xl text-muted-foreground mb-6">
               Discover how NeumoAI's advanced features can help you monitor and improve your respiratory health with cutting-edge technology.
             </p>
             <Button 
@@ -71,17 +71,17 @@ export default function Features() {
             {features.map((feature, index) => (
               <motion.div
                 key={index}
-                className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+                className="bg-card rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 whileHover={{ y: -5 }}
               >
                 <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-2xl font-bold text-[#1a2352] mb-3">
+                <h3 className="text-2xl font-bold text-foreground mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600">
+                <p className="text-muted-foreground">
                   {feature.description}
                 </p>
               </motion.div>

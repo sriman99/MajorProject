@@ -54,7 +54,7 @@ export function HospitalCard({
 
   return (
     <>
-      <div className="bg-white rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col">
+      <div className="bg-card rounded-xl overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300 h-full flex flex-col">
         {/* Image */}
         <div className="relative h-48 overflow-hidden">
           <img
@@ -63,7 +63,7 @@ export function HospitalCard({
             className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
           />
           {rating && (
-            <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
+            <div className="absolute top-3 right-3 bg-card/95 backdrop-blur-sm px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
               <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
               <span className="text-sm font-semibold text-gray-800">{rating}</span>
             </div>
@@ -86,7 +86,7 @@ export function HospitalCard({
             <Phone className="w-4 h-4 text-[#008080]" />
             <a
               href={`tel:${phone}`}
-              className="text-sm font-medium text-[#1a2352] hover:text-[#008080] transition-colors"
+              className="text-sm font-medium text-foreground hover:text-[#008080] transition-colors"
             >
               {phone}
             </a>
@@ -150,7 +150,7 @@ export function HospitalCard({
       {/* Know More Modal */}
       {showDetails && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-card rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="relative">
               <img
                 src={image}
@@ -159,7 +159,7 @@ export function HospitalCard({
               />
               <button
                 onClick={() => setShowDetails(false)}
-                className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-colors"
+                className="absolute top-4 right-4 bg-card/90 backdrop-blur-sm p-2 rounded-full hover:bg-card transition-colors"
               >
                 <X className="w-5 h-5 text-gray-700" />
               </button>
@@ -176,12 +176,12 @@ export function HospitalCard({
 
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-[#1a2352] mb-2">About Hospital</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-2">About Hospital</h3>
                 <p className="text-gray-600">{description}</p>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-[#1a2352] mb-2">Contact Information</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Contact Information</h3>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2 text-gray-600">
                     <MapPin className="w-4 h-4 mt-1 text-[#008080]" />
@@ -208,7 +208,7 @@ export function HospitalCard({
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-[#1a2352] mb-2">Specialties</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Specialties</h3>
                 <div className="flex flex-wrap gap-2">
                   {specialties.map((specialty, index) => (
                     <span
@@ -222,7 +222,7 @@ export function HospitalCard({
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold text-[#1a2352] mb-2">Timings</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-2">Timings</h3>
                 <div className="space-y-2 text-gray-600">
                   <p className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
@@ -264,11 +264,11 @@ export function HospitalCard({
       {/* Booking Modal */}
       {showBooking && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-card rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-start justify-between mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#1a2352] mb-2">Book Appointment</h2>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Book Appointment</h2>
                   <p className="text-gray-600">at {name}</p>
                 </div>
                 <button

@@ -153,7 +153,7 @@ export function RecordingModal({ isOpen, onClose, onRecordingComplete, duration 
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 relative"
+        className="bg-card rounded-2xl p-8 max-w-2xl w-full mx-4 relative"
       >
         <button
           onClick={onClose}
@@ -163,7 +163,7 @@ export function RecordingModal({ isOpen, onClose, onRecordingComplete, duration 
         </button>
 
         <div className="text-center">
-          <h3 className="text-2xl font-bold text-[#1a2352] mb-2">
+          <h3 className="text-2xl font-bold text-foreground mb-2">
             {recordingState === 'idle' && 'Ready to Record'}
             {recordingState === 'recording' && 'Recording in Progress'}
             {recordingState === 'recorded' && 'Recording Completed'}

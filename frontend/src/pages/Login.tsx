@@ -162,7 +162,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted relative overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.img 
@@ -197,7 +197,7 @@ export default function Login() {
 
       <div className="container mx-auto px-4 py-16 relative z-10">
         <motion.div 
-          className="max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-8"
+          className="max-w-lg mx-auto bg-card rounded-2xl shadow-lg p-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -215,8 +215,8 @@ export default function Login() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             />
-            <h1 className="text-3xl font-bold text-[#1a2352] mb-2">Welcome Back</h1>
-            <p className="text-gray-600">Sign in to continue your health journey</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Welcome Back</h1>
+            <p className="text-muted-foreground">Sign in to continue your health journey</p>
           </motion.div>
 
           <motion.form
@@ -307,11 +307,11 @@ export default function Login() {
                   type="checkbox"
                   className="h-4 w-4 text-[#ff7757] focus:ring-[#ff7757] border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-muted-foreground">
                   Remember me
                 </label>
               </div>
-              <a href="/forgot-password" className="text-sm text-[#ff7757] hover:text-[#1a2352] transition-colors">
+              <a href="/forgot-password" className="text-sm text-[#ff7757] hover:text-foreground transition-colors">
                 Forgot password?
               </a>
             </motion.div>
@@ -375,13 +375,13 @@ export default function Login() {
             </motion.div>
 
             <motion.p
-              className="text-center text-gray-600"
+              className="text-center text-muted-foreground"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.75 }}
             >
               Don't have an account?{" "}
-              <Link to="/signup" className="text-[#ff7757] hover:text-[#1a2352] transition-colors">
+              <Link to="/signup" className="text-[#ff7757] hover:text-foreground transition-colors">
                 Sign up
               </Link>
             </motion.p>

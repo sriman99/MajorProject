@@ -5,6 +5,7 @@ import { Label } from "./label"
 import { Textarea } from "./textarea"
 import { assets } from "../../config/assets"
 import { motion } from "framer-motion"
+import { Mail, Phone, MapPin } from "lucide-react"
 
 export function Contact() {
   const [formData, setFormData] = useState({
@@ -42,7 +43,7 @@ export function Contact() {
   }
 
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden transition-all duration-300" id="contact">
+    <section className="py-20 bg-gradient-to-b from-background to-muted relative overflow-hidden transition-all duration-300" id="contact">
       {/* Decorative elements */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.img 
@@ -90,8 +91,8 @@ export function Contact() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <h2 className="text-4xl font-bold text-[#1a2352] mb-4">Get in Touch</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-4xl font-bold text-foreground mb-4">Get in Touch</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Have questions about our services? We're here to help. Fill out the form below and we'll get back to you as soon as possible.
             </p>
           </motion.div>
@@ -105,38 +106,32 @@ export function Contact() {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <div className="flex items-start space-x-4">
-                <div className="bg-[#ff7757] bg-opacity-10 p-3 rounded-full">
-                  <svg className="w-6 h-6 text-[#ff7757]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+                <div className="bg-[#ff7757]/10 p-3 rounded-full">
+                  <Mail className="w-6 h-6 text-[#ff7757]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[#1a2352]">Email Us</h3>
-                  <p className="text-gray-600">support@neumoai.com</p>
+                  <h3 className="text-lg font-semibold text-foreground">Email Us</h3>
+                  <p className="text-muted-foreground">support@neumoai.com</p>
                 </div>
               </div>
 
               <div className="flex items-start space-x-4">
-                <div className="bg-[#ff7757] bg-opacity-10 p-3 rounded-full">
-                  <svg className="w-6 h-6 text-[#ff7757]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
+                <div className="bg-[#ff7757]/10 p-3 rounded-full">
+                  <Phone className="w-6 h-6 text-[#ff7757]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[#1a2352]">Call Us</h3>
-                  <p className="text-gray-600">+1 (555) 123-4567</p>
+                  <h3 className="text-lg font-semibold text-foreground">Call Us</h3>
+                  <p className="text-muted-foreground">+1 (555) 123-4567</p>
                 </div>
               </div>
 
               <div className="flex items-start space-x-4">
-                <div className="bg-[#ff7757] bg-opacity-10 p-3 rounded-full">
-                  <svg className="w-6 h-6 text-[#ff7757]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-.324-.324a1.998 1.998 0 010-2.827l4.243-4.243m4.243-4.243a6 6 0 00-8.486 0L4.343 16.657a6 6 0 108.486 8.486l4.243-4.243" />
-                  </svg>
+                <div className="bg-[#ff7757]/10 p-3 rounded-full">
+                  <MapPin className="w-6 h-6 text-[#ff7757]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[#1a2352]">Visit Us</h3>
-                  <p className="text-gray-600">123 Health Street, Medical City, MC 12345</p>
+                  <h3 className="text-lg font-semibold text-foreground">Visit Us</h3>
+                  <p className="text-muted-foreground">123 Health Street, Medical City, MC 12345</p>
                 </div>
               </div>
             </motion.div>

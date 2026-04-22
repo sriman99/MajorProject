@@ -48,10 +48,10 @@ export function About() {
                 About Us
               </span>
             </div>
-            <h2 className="text-5xl font-bold text-[#1a2352] leading-tight">
+            <h2 className="text-5xl font-bold text-foreground leading-tight">
               What Is NeumoAI?
             </h2>
-            <p className="text-xl text-gray-600 leading-relaxed">
+            <p className="text-xl text-muted-foreground leading-relaxed">
               AI-powered web platform that helps users detect respiratory diseases through breathing sound analysis, while providing video consultations with doctors and health monitoring features.
             </p>
             <div className="flex space-x-4">

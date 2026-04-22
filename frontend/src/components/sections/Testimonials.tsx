@@ -59,7 +59,7 @@ export const Testimonials = () => {
   const visibleTestimonials = testimonials.slice(currentIndex, currentIndex + itemsPerPage)
 
   return (
-    <section className="py-20 bg-gradient-to-b from-gray-50 to-white">
+    <section className="py-20 bg-gradient-to-b from-muted to-background">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -68,16 +68,16 @@ export const Testimonials = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">What Our Users Say</h2>
-          <p className="text-xl text-gray-600">Trusted by leading healthcare professionals worldwide</p>
+          <h2 className="text-4xl font-bold text-foreground mb-4">What Our Users Say</h2>
+          <p className="text-xl text-muted-foreground">Trusted by leading healthcare professionals worldwide</p>
         </motion.div>
 
         <div className="relative">
           <button
             onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 bg-card rounded-full p-2 shadow-lg hover:bg-muted transition-colors"
           >
-            <ChevronLeft className="w-6 h-6 text-gray-600" />
+            <ChevronLeft className="w-6 h-6 text-muted-foreground" />
           </button>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -88,7 +88,7 @@ export const Testimonials = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                className="bg-card rounded-xl shadow-lg p-8 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
                 <div className="flex items-center mb-6">
                   <div className="w-16 h-16 rounded-full overflow-hidden mr-4 ring-2 ring-blue-100">
@@ -99,11 +99,11 @@ export const Testimonials = () => {
                     />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">{testimonial.name}</h3>
-                    <p className="text-gray-600">{testimonial.role}</p>
+                    <h3 className="text-xl font-semibold text-foreground">{testimonial.name}</h3>
+                    <p className="text-muted-foreground">{testimonial.role}</p>
                   </div>
                 </div>
-                <p className="text-gray-700 mb-6 leading-relaxed">{testimonial.content}</p>
+                <p className="text-foreground mb-6 leading-relaxed">{testimonial.content}</p>
                 <div className="flex">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
@@ -115,9 +115,9 @@ export const Testimonials = () => {
 
           <button
             onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 bg-card rounded-full p-2 shadow-lg hover:bg-muted transition-colors"
           >
-            <ChevronRight className="w-6 h-6 text-gray-600" />
+            <ChevronRight className="w-6 h-6 text-muted-foreground" />
           </button>
         </div>
 

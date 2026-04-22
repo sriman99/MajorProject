@@ -57,7 +57,7 @@ export function MobileMenu({ isDoctor = false }) {
             <div className="flex flex-col gap-4 mt-4">
               <Button
                 variant="ghost"
-                className="text-[#1a2352] hover:text-[#ff7757] transition-colors justify-start"
+                className="text-foreground hover:text-[#ff7757] transition-colors justify-start"
                 asChild
               >
                 <Link to={isDoctor ? "/doctor/dashboard" : "/profile"}>

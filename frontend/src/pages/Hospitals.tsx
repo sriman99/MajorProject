@@ -98,7 +98,7 @@ export default function Hospitals() {
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-muted-foreground mb-4">{error}</p>
           <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </div>
@@ -109,14 +109,14 @@ export default function Hospitals() {
     <div className="min-h-screen bg-[#f8fafc]">
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-[#1a2352] mb-2">Find A Hospital</h1>
-          <p className="text-xl text-gray-600">
+          <h1 className="text-4xl font-bold text-foreground mb-2">Find A Hospital</h1>
+          <p className="text-xl text-muted-foreground">
             Locate Quality Healthcare Facilities Near You
           </p>
         </div>
 
         {/* Search Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm mb-8">
+        <div className="bg-card rounded-2xl p-6 shadow-sm mb-8">
           <div className="grid md:grid-cols-2 gap-4">
             {/* Hospital Search */}
             <div className="relative">
@@ -149,7 +149,7 @@ export default function Hospitals() {
         </div>
 
         {/* Results Count */}
-        <p className="text-gray-600 mb-6">{filteredHospitals.length} hospitals found</p>
+        <p className="text-muted-foreground mb-6">{filteredHospitals.length} hospitals found</p>
 
         {/* Hospitals Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -173,7 +173,7 @@ export default function Hospitals() {
 
         {filteredHospitals.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No hospitals found matching your criteria</p>
+            <p className="text-muted-foreground text-lg">No hospitals found matching your criteria</p>
           </div>
         )}
       </div>

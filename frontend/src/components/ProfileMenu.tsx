@@ -28,7 +28,7 @@ export default function ProfileMenu() {
                 />
             </button>
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg">
+                <div className="absolute right-0 mt-2 w-48 bg-card border rounded shadow-lg">
                     <div className="p-4">
                         <h3 className="text-lg font-semibold">{user.full_name}</h3>
                         <p className="text-sm text-gray-600">{user.email}</p>

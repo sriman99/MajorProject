@@ -16,7 +16,7 @@ export function Footer() {
   ]
 
   return (
-    <footer className="bg-gradient-to-b from-white to-gray-50 py-10 border-t border-gray-100 relative overflow-hidden">
+    <footer className="bg-gradient-to-b from-background to-muted py-10 border-t border-border relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-tr from-[#ff7757]/5 via-transparent to-[#1a2352]/5 rounded-3xl blur-3xl -z-10" />
       <div className="absolute inset-0 pointer-events-none">
         <img 
@@ -38,7 +38,7 @@ export function Footer() {
               NeumoAI
             </span> */}
             <Link to="/">
-              <img src="/logo.png" alt="" className="w-30 h-17" />
+              <img src="/logo.png" alt="" className="w-30 h-17 dark:brightness-0 dark:invert" />
             </Link>
           </div>
 
@@ -47,7 +47,7 @@ export function Footer() {
               <a 
                 key={link.name}
                 href={link.href} 
-                className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group"
+                className="text-foreground hover:text-[#ff7757] transition-colors relative group"
               >
                 {link.name}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300" />
@@ -70,7 +70,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-gray-100 pt-2 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-600 mb-4 md:mb-0">
+          <p className="text-muted-foreground mb-4 md:mb-0">
             © {new Date().getFullYear()} NeumoAI. All rights reserved
           </p>
           <div className="flex space-x-8">
@@ -78,7 +78,7 @@ export function Footer() {
               <a 
                 key={text}
                 href="#" 
-                className="text-gray-600 hover:text-[#ff7757] transition-colors relative group"
+                className="text-muted-foreground hover:text-[#ff7757] transition-colors relative group"
               >
                 {text}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300" />

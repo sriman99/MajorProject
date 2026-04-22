@@ -30,10 +30,10 @@ export function FAQSection() {
   return (
     <section className="py-20">
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-[#1a2352] text-center mb-4">
+        <h2 className="text-4xl font-bold text-foreground text-center mb-4">
           Frequently Asked Questions
         </h2>
-        <p className="text-center text-gray-600 mb-12">
+        <p className="text-center text-muted-foreground mb-12">
           Feel free to ask questions at{" "}
           <a href="mailto:neumoai@gmail.com" className="text-[#ff7757]">
             neumoai@gmail.com
@@ -44,13 +44,13 @@ export function FAQSection() {
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className="bg-white rounded-lg shadow-sm overflow-hidden"
+              className="bg-card rounded-lg shadow-sm overflow-hidden border border-border"
             >
               <button
                 className="w-full p-6 text-left flex items-center justify-between"
                 onClick={() => setOpenIndex(openIndex === index ? null : index)}
               >
-                <span className="text-lg font-semibold text-[#1a2352]">
+                <span className="text-lg font-semibold text-foreground">
                   {faq.question}
                 </span>
                 <span className="text-[#ff7757] text-2xl">
@@ -59,7 +59,7 @@ export function FAQSection() {
               </button>
               {openIndex === index && (
                 <div className="px-6 pb-6">
-                  <p className="text-gray-600">{faq.answer}</p>
+                  <p className="text-muted-foreground">{faq.answer}</p>
                 </div>
               )}
             </div>

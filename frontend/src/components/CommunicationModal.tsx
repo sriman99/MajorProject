@@ -406,7 +406,7 @@ export function CommunicationModal({ isOpen, onClose, doctor, userId }: Communic
               
               {messageGroups.length === 0 && !isLoadingHistory && (
                 <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                  <div className="bg-white rounded-full p-4 mb-3">
+                  <div className="bg-card rounded-full p-4 mb-3">
                     <MessageCircle className="h-8 w-8 text-[#008080]" />
                   </div>
                   <h3 className="font-medium">Start a conversation</h3>
@@ -419,7 +419,7 @@ export function CommunicationModal({ isOpen, onClose, doctor, userId }: Communic
               {messageGroups.map((group, groupIndex) => (
                 <div key={groupIndex} className="space-y-2">
                   <div className="flex justify-center">
-                    <div className="bg-white px-2 py-1 rounded-lg text-xs text-gray-500 shadow-sm">
+                    <div className="bg-card px-2 py-1 rounded-lg text-xs text-gray-500 shadow-sm">
                       {group.date}
                     </div>
                   </div>
@@ -438,7 +438,7 @@ export function CommunicationModal({ isOpen, onClose, doctor, userId }: Communic
                           className={`relative max-w-[70%] px-3 py-2 rounded-lg shadow-sm
                             ${msg.sender === "user" 
                                 ? "bg-[#dcf8c6] text-black rounded-tr-none" 
-                                : "bg-white text-black rounded-tl-none"}`}
+                                : "bg-card text-black rounded-tl-none"}`}
                         >
                           {!isSequence && msg.sender === "doctor" && (
                             <div 
@@ -488,7 +488,7 @@ export function CommunicationModal({ isOpen, onClose, doctor, userId }: Communic
               {/* Typing indicator */}
               {typing && status === 'connected' && (
                 <div className="flex justify-start">
-                  <div className="bg-white px-4 py-2 rounded-lg text-gray-500 text-sm">
+                  <div className="bg-card px-4 py-2 rounded-lg text-gray-500 text-sm">
                     <div className="flex items-center space-x-1">
                       <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: "0ms"}} />
                       <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: "300ms"}} />
@@ -502,7 +502,7 @@ export function CommunicationModal({ isOpen, onClose, doctor, userId }: Communic
               <div ref={messagesEndRef} />
             </div>
             
-            <div className="p-3 border-t bg-white flex gap-2 items-end">
+            <div className="p-3 border-t bg-card flex gap-2 items-end">
               <Textarea 
                 ref={textareaRef}
                 value={message}

@@ -121,7 +121,7 @@ export default function PaymentHistory() {
             Back to Dashboard
           </Button>
           <h1 className="text-3xl font-bold text-gray-900">Payment History</h1>
-          <p className="text-gray-600 mt-1">View all your past payments and transactions</p>
+          <p className="text-muted-foreground mt-1">View all your past payments and transactions</p>
         </div>
 
         {/* Payments List */}
@@ -130,7 +130,7 @@ export default function PaymentHistory() {
             <CardContent className="py-12 text-center">
               <CreditCard className="w-16 h-16 mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Payments Yet</h3>
-              <p className="text-gray-600 mb-6">You haven't made any payments yet.</p>
+              <p className="text-muted-foreground mb-6">You haven't made any payments yet.</p>
               <Button onClick={() => navigate('/appointments')}>
                 Book an Appointment
               </Button>
@@ -158,15 +158,15 @@ export default function PaymentHistory() {
                             {getStatusBadge(payment.status)}
                           </div>
                           <div className="space-y-1">
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-muted-foreground">
                               <span className="font-medium">Payment Method:</span>{' '}
                               {payment.payment_method.toUpperCase()}
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-muted-foreground">
                               <span className="font-medium">Date:</span> {formatDate(payment.created_at)}{' '}
                               at {formatTime(payment.created_at)}
                             </p>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-muted-foreground">
                               <span className="font-medium">Transaction ID:</span>{' '}
                               {payment.id.slice(0, 12)}...
                             </p>
@@ -195,48 +195,48 @@ export default function PaymentHistory() {
                           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <p className="text-xs text-gray-500">Appointment Date</p>
+                                <p className="text-xs text-muted-foreground">Appointment Date</p>
                                 <p className="text-sm font-medium">{appointment.date}</p>
                               </div>
                               <div>
-                                <p className="text-xs text-gray-500">Appointment Time</p>
+                                <p className="text-xs text-muted-foreground">Appointment Time</p>
                                 <p className="text-sm font-medium">{appointment.time}</p>
                               </div>
                               <div>
-                                <p className="text-xs text-gray-500">Status</p>
+                                <p className="text-xs text-muted-foreground">Status</p>
                                 <p className="text-sm font-medium capitalize">{appointment.status}</p>
                               </div>
                               <div>
-                                <p className="text-xs text-gray-500">Appointment ID</p>
+                                <p className="text-xs text-muted-foreground">Appointment ID</p>
                                 <p className="text-sm font-medium">{appointment.id.slice(0, 8)}...</p>
                               </div>
                             </div>
                             <div className="pt-2">
-                              <p className="text-xs text-gray-500">Reason</p>
+                              <p className="text-xs text-muted-foreground">Reason</p>
                               <p className="text-sm font-medium">{appointment.reason}</p>
                             </div>
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-500">Appointment details not available</p>
+                          <p className="text-sm text-muted-foreground">Appointment details not available</p>
                         )}
 
                         <div className="mt-4 pt-4 border-t border-gray-200">
                           <h4 className="font-semibold text-gray-900 mb-3">Payment Information</h4>
                           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Payment ID</span>
+                              <span className="text-sm text-muted-foreground">Payment ID</span>
                               <span className="text-sm font-medium">{payment.id}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Amount Paid</span>
+                              <span className="text-sm text-muted-foreground">Amount Paid</span>
                               <span className="text-sm font-medium">Rs. {payment.amount}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Payment Status</span>
+                              <span className="text-sm text-muted-foreground">Payment Status</span>
                               <span className="text-sm font-medium capitalize">{payment.status}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Payment Date</span>
+                              <span className="text-sm text-muted-foreground">Payment Date</span>
                               <span className="text-sm font-medium">
                                 {formatDate(payment.created_at)} {formatTime(payment.created_at)}
                               </span>
@@ -263,19 +263,19 @@ export default function PaymentHistory() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
                   <p className="text-2xl font-bold text-blue-600">{payments.length}</p>
-                  <p className="text-sm text-gray-600">Total Payments</p>
+                  <p className="text-sm text-muted-foreground">Total Payments</p>
                 </div>
                 <div className="text-center p-4 bg-green-50 rounded-lg">
                   <p className="text-2xl font-bold text-green-600">
                     {payments.filter(p => p.status === 'success').length}
                   </p>
-                  <p className="text-sm text-gray-600">Successful</p>
+                  <p className="text-sm text-muted-foreground">Successful</p>
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <p className="text-2xl font-bold text-purple-600">
                     Rs. {payments.reduce((sum, p) => sum + p.amount, 0)}
                   </p>
-                  <p className="text-sm text-gray-600">Total Spent</p>
+                  <p className="text-sm text-muted-foreground">Total Spent</p>
                 </div>
               </div>
             </CardContent>

@@ -91,9 +91,9 @@ export function DoctorCard({
             <AvatarImage src={image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff&size=200`} alt={name} />
             <AvatarFallback className="text-xl">{name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
           </Avatar>
-          <CardTitle className="text-xl text-[#1a2352]">{name}</CardTitle>
+          <CardTitle className="text-xl text-foreground">{name}</CardTitle>
           <p className="text-sm text-[#008080] font-medium mt-1">{experience}</p>
-          <p className="text-xs text-gray-500">{qualifications}</p>
+          <p className="text-xs text-muted-foreground">{qualifications}</p>
           <div className="flex flex-wrap justify-center gap-1.5 mt-3">
             {specialties.slice(0, 2).map((specialty) => (
               <Badge key={specialty} variant="secondary" className="text-xs bg-[#008080]/10 text-[#008080] hover:bg-[#008080]/20">
@@ -101,7 +101,7 @@ export function DoctorCard({
               </Badge>
             ))}
             {specialties.length > 2 && (
-              <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+              <Badge variant="secondary" className="text-xs bg-secondary text-muted-foreground">
                 +{specialties.length - 2}
               </Badge>
             )}
@@ -110,14 +110,14 @@ export function DoctorCard({
         <CardContent className="flex-1 flex flex-col pt-2">
           <div className="space-y-2 flex-1">
             {/* Languages */}
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Languages className="h-3.5 w-3.5 text-[#008080]" />
               <span className="truncate">{languages.join(', ')}</span>
             </div>
 
             {/* Locations */}
             {locations.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <MapPin className="h-3.5 w-3.5 text-[#008080]" />
                 <span className="truncate">{locations[0].name}</span>
               </div>
@@ -125,7 +125,7 @@ export function DoctorCard({
 
             {/* Timings */}
             {timings.hours && (
-              <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Clock className="h-3.5 w-3.5 text-[#008080]" />
                 <span className="truncate">{timings.hours} ({timings.days})</span>
               </div>

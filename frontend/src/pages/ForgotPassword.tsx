@@ -55,7 +55,7 @@ export default function ForgotPassword() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute inset-0 pointer-events-none">
           <motion.img
@@ -92,7 +92,7 @@ export default function ForgotPassword() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600 text-center">
+                <p className="text-sm text-muted-foreground text-center">
                   Didn't receive an email? Check your spam folder or try again.
                 </p>
                 <div className="flex flex-col gap-2">
@@ -122,7 +122,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted relative overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.img
@@ -157,7 +157,7 @@ export default function ForgotPassword() {
 
       <div className="container mx-auto px-4 py-16 relative z-10">
         <motion.div
-          className="max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-8"
+          className="max-w-lg mx-auto bg-card rounded-2xl shadow-lg p-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -175,8 +175,8 @@ export default function ForgotPassword() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             />
-            <h1 className="text-3xl font-bold text-[#1a2352] mb-2">Forgot Password?</h1>
-            <p className="text-gray-600">Enter your email to receive a password reset link</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Forgot Password?</h1>
+            <p className="text-muted-foreground">Enter your email to receive a password reset link</p>
           </motion.div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -244,7 +244,7 @@ export default function ForgotPassword() {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="inline-flex items-center text-sm text-[#ff7757] hover:text-[#1a2352] transition-colors"
+                className="inline-flex items-center text-sm text-[#ff7757] hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 Back to Login

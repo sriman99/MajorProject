@@ -98,9 +98,9 @@ export function CallModal({ isOpen, onClose, doctorName, doctorId, callType }: C
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl w-full max-w-5xl h-[80vh] flex flex-col">
+      <div className="bg-card rounded-2xl w-full max-w-5xl h-[80vh] flex flex-col">
         <div className="p-4 flex items-center justify-between border-b">
-          <h2 className="text-xl font-semibold text-[#1a2352]">
+          <h2 className="text-xl font-semibold text-foreground">
             {callType === "video" ? "Video" : "Audio"} Call with {doctorName}
           </h2>
           <button

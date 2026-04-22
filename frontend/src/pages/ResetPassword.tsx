@@ -122,7 +122,7 @@ export default function ResetPassword() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted relative overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.img
@@ -157,7 +157,7 @@ export default function ResetPassword() {
 
       <div className="container mx-auto px-4 py-16 relative z-10">
         <motion.div
-          className="max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-8"
+          className="max-w-lg mx-auto bg-card rounded-2xl shadow-lg p-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -175,8 +175,8 @@ export default function ResetPassword() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             />
-            <h1 className="text-3xl font-bold text-[#1a2352] mb-2">Reset Password</h1>
-            <p className="text-gray-600">Create a new secure password</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Reset Password</h1>
+            <p className="text-muted-foreground">Create a new secure password</p>
           </motion.div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -199,7 +199,7 @@ export default function ResetPassword() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-muted-foreground"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -250,7 +250,7 @@ export default function ResetPassword() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-muted-foreground"
                 >
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -296,7 +296,7 @@ export default function ResetPassword() {
             </motion.div>
 
             <motion.p
-              className="text-center text-gray-600"
+              className="text-center text-muted-foreground"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.7 }}
@@ -305,7 +305,7 @@ export default function ResetPassword() {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="text-[#ff7757] hover:text-[#1a2352] transition-colors"
+                className="text-[#ff7757] hover:text-foreground transition-colors"
               >
                 Sign in
               </button>

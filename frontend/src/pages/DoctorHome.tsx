@@ -57,7 +57,7 @@ export function DoctorHome() {
   ]
   
   return (
-    <div className="bg-white">
+    <div className="bg-card">
       {/* Hero section */}
       <section className="relative py-20 bg-gradient-to-r from-blue-700 to-blue-900 text-white overflow-hidden">
         <div className="container mx-auto px-6">
@@ -71,7 +71,7 @@ export function DoctorHome() {
               <Button 
                 onClick={() => navigate('/doctor/dashboard')} 
                 size="lg"
-                className="bg-white text-blue-700 hover:bg-blue-50 shadow-lg transition-all duration-300"
+                className="bg-card text-blue-700 hover:bg-blue-50 shadow-lg transition-all duration-300"
               >
                 My Dashboard
               </Button>
@@ -113,7 +113,7 @@ export function DoctorHome() {
                 <CardContent className="p-8">
                   <div className="mb-6">{feature.icon}</div>
                   <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-gray-600 mb-4">{feature.description}</p>
+                  <p className="text-muted-foreground mb-4">{feature.description}</p>
                   <Button variant="ghost" className="text-blue-600 p-0 hover:bg-transparent hover:text-blue-800 flex items-center gap-1 group">
                     Access Now 
                     <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -131,7 +131,7 @@ export function DoctorHome() {
           <div className="max-w-3xl mx-auto text-center">
             <Award className="h-14 w-14 mx-auto mb-6 text-blue-600" />
             <h2 className="text-2xl font-semibold mb-6">Empowering Healthcare Professionals</h2>
-            <div className="relative py-8 px-8 bg-white rounded-lg shadow-lg mb-8 border-l-4 border-blue-500">
+            <div className="relative py-8 px-8 bg-card rounded-lg shadow-lg mb-8 border-l-4 border-blue-500">
               <p className="text-lg text-gray-700 mb-6 italic">
                 "Our platform helps doctors like you deliver exceptional care to respiratory patients
                 with advanced tools, streamlined workflows, and improved patient communication."
