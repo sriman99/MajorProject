@@ -54,3 +54,6 @@ def get_payments_collection():
 
 def get_notifications_collection():
     return database.db.notifications
+
+def get_feedback_collection():
+    return database.db.feedback

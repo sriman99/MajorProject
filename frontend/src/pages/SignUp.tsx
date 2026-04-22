@@ -6,9 +6,9 @@ import { assets } from "../config/assets"
 import { motion, AnimatePresence } from "framer-motion"
 import apiClient from "@/services/api"
 import { useNavigate, Link } from "react-router-dom"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner"
 import { useAuth } from "../hooks/useAuth"
-import { Stethoscope, User, ArrowLeft, Check } from "lucide-react"
+import { Stethoscope, User, ArrowLeft, Check, CheckCircle2 } from "lucide-react"
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google"
 
 type Role = "" | "doctor" | "user"
@@ -28,13 +28,32 @@ export default function SignUp() {
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [shake, setShake] = useState(false)
+
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    if (errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
+  }
+
+  const isFieldValid = (field: string) => {
+    const v = formData[field as keyof typeof formData]
+    if (!v) return false
+    if (field === "email") return /\S+@\S+\.\S+/.test(v)
+    if (field === "phone") return v.length >= 10
+    if (field === "password") return v.length >= 6
+    if (field === "confirm_password") return v === formData.password && v.length > 0
+    if (field === "full_name") return v.length >= 2
+    return v.length > 0
+  }
 
   const validatePassword = (password: string): string | null => {
-    if (password.length < 8) return "Password must be at least 8 characters"
-    if (!/\d/.test(password)) return "Password must contain at least one digit"
-    if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter"
-    if (!/[a-z]/.test(password)) return "Password must contain at least one lowercase letter"
-    if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) return "Password must contain at least one special character"
+    if (password.length < 6) return "Password must be at least 6 characters"
     return null
   }
 
@@ -61,6 +80,10 @@ export default function SignUp() {
     }
 
     setErrors(newErrors)
+    if (Object.keys(newErrors).length > 0) {
+      setShake(true)
+      setTimeout(() => setShake(false), 500)
+    }
     return Object.keys(newErrors).length === 0
   }
 
@@ -267,97 +290,56 @@ export default function SignUp() {
                 <p className="text-gray-500 text-sm">Fill in your details to get started</p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <motion.div
-                  className="space-y-1.5"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
-                >
-                  <Label htmlFor="full_name">Full Name</Label>
-                  <Input
-                    id="full_name"
-                    type="text"
-                    placeholder={selectedRole === "doctor" ? "Dr. John Smith" : "John Smith"}
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                    className={errors.full_name ? "border-red-500" : ""}
-                  />
-                  {errors.full_name && <p className="text-red-500 text-xs">{errors.full_name}</p>}
-                </motion.div>
-
-                <motion.div
-                  className="space-y-1.5"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.15 }}
-                >
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className={errors.email ? "border-red-500" : ""}
-                  />
-                  {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
-                </motion.div>
-
-                <motion.div
-                  className="space-y-1.5"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
-                >
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+91 98765 43210"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className={errors.phone ? "border-red-500" : ""}
-                  />
-                  {errors.phone && <p className="text-red-500 text-xs">{errors.phone}</p>}
-                </motion.div>
-
-                <motion.div
-                  className="space-y-1.5"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.25 }}
-                >
-                  <Label htmlFor="password">Password</Label>
-                  <p className="text-xs text-gray-500">
-                    Must be 8+ chars with uppercase, lowercase, number & special character
-                  </p>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className={errors.password ? "border-red-500" : ""}
-                  />
-                  {errors.password && <p className="text-red-500 text-xs">{errors.password}</p>}
-                </motion.div>
-
-                <motion.div
-                  className="space-y-1.5"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.3 }}
-                >
-                  <Label htmlFor="confirm_password">Confirm Password</Label>
-                  <Input
-                    id="confirm_password"
-                    type="password"
-                    value={formData.confirm_password}
-                    onChange={(e) => setFormData({ ...formData, confirm_password: e.target.value })}
-                    className={errors.confirm_password ? "border-red-500" : ""}
-                  />
-                  {errors.confirm_password && <p className="text-red-500 text-xs">{errors.confirm_password}</p>}
-                </motion.div>
+              <motion.form
+                onSubmit={handleSubmit}
+                className="space-y-5"
+                animate={shake ? { x: [0, -10, 10, -10, 10, 0] } : {}}
+                transition={{ duration: 0.4 }}
+              >
+                {[
+                  { id: "full_name", label: "Full Name", type: "text", placeholder: selectedRole === "doctor" ? "Dr. John Smith" : "John Smith", delay: 0.1 },
+                  { id: "email", label: "Email", type: "email", placeholder: "you@example.com", delay: 0.15 },
+                  { id: "phone", label: "Phone Number", type: "tel", placeholder: "+91 98765 43210", delay: 0.2 },
+                  { id: "password", label: "Password", type: "password", placeholder: "At least 6 characters", delay: 0.25, hint: "Must be at least 6 characters" },
+                  { id: "confirm_password", label: "Confirm Password", type: "password", placeholder: "Re-enter your password", delay: 0.3 },
+                ].map((field) => (
+                  <motion.div
+                    key={field.id}
+                    className="space-y-1.5"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.4, delay: field.delay }}
+                  >
+                    <Label htmlFor={field.id}>{field.label}</Label>
+                    {field.hint && <p className="text-xs text-gray-500">{field.hint}</p>}
+                    <div className="relative">
+                      <Input
+                        id={field.id}
+                        type={field.type}
+                        placeholder={field.placeholder}
+                        value={formData[field.id as keyof typeof formData]}
+                        onChange={(e) => handleFieldChange(field.id, e.target.value)}
+                        className={`pr-10 transition-colors ${errors[field.id] ? "border-red-500 focus:ring-red-500" : isFieldValid(field.id) ? "border-green-500 focus:ring-green-500" : ""}`}
+                      />
+                      {isFieldValid(field.id) && !errors[field.id] && (
+                        <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                      )}
+                    </div>
+                    <AnimatePresence>
+                      {errors[field.id] && (
+                        <motion.p
+                          className="text-red-500 text-xs"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {errors[field.id]}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                ))}
 
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -423,7 +405,7 @@ export default function SignUp() {
                     Sign in
                   </Link>
                 </motion.p>
-              </form>
+              </motion.form>
             </motion.div>
           )}
         </AnimatePresence>

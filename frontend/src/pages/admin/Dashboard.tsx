@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { useAuthWithFetch } from "@/hooks/useAuth"
 import { Skeleton } from "@/components/ui/skeleton"
-import { adminApi, type AdminStats, type User, type EnrichedAppointment } from "@/services/api"
+import { adminApi, feedbackApi, adminDoctorsApi, type AdminStats, type User, type EnrichedAppointment, type FeedbackItem, type AdminDoctorCreate, type Doctor } from "@/services/api"
 import { toast } from "sonner"
 import {
   Users,
@@ -18,8 +19,15 @@ import {
   Search,
   CheckCircle,
   XCircle,
-  Trash2
+  Trash2,
+  MessageSquare,
+  Star,
+  Plus
 } from "lucide-react"
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts"
+import { StaggerContainer, StaggerItem, FadeIn, AnimatedCounter } from "@/components/ui/animated"
+
+const CHART_COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6']
 
 interface DashboardData {
   stats: AdminStats | null
@@ -43,6 +51,17 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("")
   const [refreshing, setRefreshing] = useState(false)
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([])
+  const [loadingFeedback, setLoadingFeedback] = useState(false)
+  const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [showAddDoctor, setShowAddDoctor] = useState(false)
+  const [newDoctor, setNewDoctor] = useState<{
+    name: string; email: string; phone: string; experience: string;
+    qualifications: string; languages: string; specialties: string; gender: string;
+  }>({
+    name: "", email: "", phone: "", experience: "",
+    qualifications: "", languages: "", specialties: "", gender: "male"
+  })
 
   const fetchDashboardData = async () => {
     try {
@@ -50,10 +69,12 @@ export default function AdminDashboard() {
       setLoading(true)
 
       // Fetch all data in parallel
-      const [statsData, usersData, appointmentsData] = await Promise.all([
+      const [statsData, usersData, appointmentsData, feedbackData, doctorsData] = await Promise.all([
         adminApi.getStats(),
         adminApi.getUsers({ limit: 10 }),
-        adminApi.getAppointments({ limit: 10 })
+        adminApi.getAppointments({ limit: 10 }),
+        feedbackApi.getAll().catch(() => [] as FeedbackItem[]),
+        import("@/services/api").then(m => m.default.get<Doctor[]>('/doctors')).then(r => r.data).catch(() => [] as Doctor[])
       ])
 
       setData({
@@ -63,6 +84,8 @@ export default function AdminDashboard() {
         usersTotal: usersData.total,
         appointmentsTotal: appointmentsData.total
       })
+      setFeedbacks(feedbackData)
+      setDoctors(doctorsData)
     } catch (err: any) {
       console.error("Failed to fetch dashboard data:", err)
       setError(err.response?.data?.detail || "Failed to load dashboard data")
@@ -117,6 +140,50 @@ export default function AdminDashboard() {
     } catch (err: any) {
       console.error("Failed to delete user:", err)
       toast.error(err.response?.data?.detail || "Failed to delete user")
+    }
+  }
+
+  const handleDeleteFeedback = async (feedbackId: string) => {
+    if (!confirm("Are you sure you want to delete this feedback?")) return
+    try {
+      await feedbackApi.delete(feedbackId)
+      setFeedbacks(prev => prev.filter(f => f.id !== feedbackId))
+      toast.success("Feedback deleted successfully")
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to delete feedback")
+    }
+  }
+
+  const handleAddDoctor = async () => {
+    try {
+      const doctorData: AdminDoctorCreate = {
+        name: newDoctor.name,
+        email: newDoctor.email,
+        phone: newDoctor.phone,
+        experience: newDoctor.experience,
+        qualifications: newDoctor.qualifications,
+        languages: newDoctor.languages.split(",").map(l => l.trim()).filter(Boolean),
+        specialties: newDoctor.specialties.split(",").map(s => s.trim()).filter(Boolean),
+        gender: newDoctor.gender as 'male' | 'female' | 'other',
+      }
+      const created = await adminDoctorsApi.create(doctorData)
+      setDoctors(prev => [...prev, created])
+      setNewDoctor({ name: "", email: "", phone: "", experience: "", qualifications: "", languages: "", specialties: "", gender: "male" })
+      setShowAddDoctor(false)
+      toast.success("Doctor added successfully")
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to add doctor")
+    }
+  }
+
+  const handleDeleteDoctor = async (doctorId: string) => {
+    if (!confirm("Are you sure you want to delete this doctor?")) return
+    try {
+      await adminDoctorsApi.delete(doctorId)
+      setDoctors(prev => prev.filter(d => d.id !== doctorId))
+      toast.success("Doctor deleted successfully")
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to delete doctor")
     }
   }
 
@@ -240,16 +307,18 @@ export default function AdminDashboard() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Welcome, {user.full_name || 'Admin'}</h1>
-            <p className="text-muted-foreground">Administrator Dashboard</p>
-          </div>
+        <FadeIn>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome, {user.full_name || 'Admin'}</h1>
+              <p className="text-muted-foreground">Administrator Dashboard</p>
+            </div>
           <Button onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
+        </FadeIn>
 
         {/* Admin Info Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -279,59 +348,35 @@ export default function AdminDashboard() {
 
         {/* Stats Overview */}
         {data.stats && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.stats.total_users}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {data.stats.total_doctors} doctors, {data.stats.total_patients} patients
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Doctors</CardTitle>
-                <Stethoscope className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.stats.total_doctors}</div>
-                <p className="text-xs text-green-600 mt-1">
-                  Active in the system
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Appointments</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.stats.active_appointments}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {data.stats.pending_appointments} pending, {data.stats.confirmed_appointments} confirmed
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">System Health</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{data.stats.system_health.toFixed(0)}%</div>
-                <p className="text-xs text-green-600 mt-1">
-                  {data.stats.system_health >= 90 ? 'Excellent' : data.stats.system_health >= 70 ? 'Good' : 'Needs Attention'}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" delay={0.1}>
+            {[
+              { title: "Total Users", value: data.stats.total_users, icon: Users, sub: `${data.stats.total_doctors} doctors, ${data.stats.total_patients} patients` },
+              { title: "Total Doctors", value: data.stats.total_doctors, icon: Stethoscope, sub: "Active in the system", green: true },
+              { title: "Active Appointments", value: data.stats.active_appointments, icon: Calendar, sub: `${data.stats.pending_appointments} pending, ${data.stats.confirmed_appointments} confirmed` },
+              { title: "System Health", value: Math.round(data.stats.system_health), icon: Activity, sub: data.stats.system_health >= 90 ? 'Excellent' : data.stats.system_health >= 70 ? 'Good' : 'Needs Attention', green: true, suffix: "%" },
+            ].map((stat) => {
+              const Icon = stat.icon
+              return (
+                <StaggerItem key={stat.title}>
+                  <Card className="hover:shadow-md transition-shadow duration-300">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">
+                        <AnimatedCounter value={stat.value} />
+                        {stat.suffix || ''}
+                      </div>
+                      <p className={`text-xs mt-1 ${stat.green ? 'text-green-600' : 'text-muted-foreground'}`}>
+                        {stat.sub}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </StaggerItem>
+              )
+            })}
+          </StaggerContainer>
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -493,6 +538,237 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Charts Section */}
+        {data.stats && (
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* User Distribution Pie Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>User Distribution by Role</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Admins', value: data.stats.total_users - data.stats.total_doctors - data.stats.total_patients },
+                        { name: 'Doctors', value: data.stats.total_doctors },
+                        { name: 'Patients', value: data.stats.total_patients },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                      outerRadius={100}
+                      dataKey="value"
+                    >
+                      {[0, 1, 2].map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Appointment Status Bar Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Appointment Status Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={[
+                      { name: 'Pending', count: data.stats.pending_appointments },
+                      { name: 'Confirmed', count: data.stats.confirmed_appointments },
+                      { name: 'Completed', count: data.stats.completed_appointments },
+                      { name: 'Cancelled', count: data.stats.cancelled_appointments },
+                    ]}
+                  >
+                    <XAxis dataKey="name" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="count" name="Appointments">
+                      {[0, 1, 2, 3].map((_, index) => (
+                        <Cell key={`bar-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Feedback Management Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                User Feedback
+              </span>
+              <Badge variant="outline">{feedbacks.length} total</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              {feedbacks.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">No feedback submitted yet</p>
+              ) : (
+                feedbacks.map((fb) => (
+                  <div key={fb.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-medium">{fb.user_name}</p>
+                          {fb.rating !== null && (
+                            <div className="flex items-center gap-0.5">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={star}
+                                  className={`h-3 w-3 ${star <= (fb.rating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800">{fb.subject}</p>
+                        <p className="text-sm text-gray-600 mt-1">{fb.message}</p>
+                        <p className="text-xs text-gray-400 mt-2">
+                          {new Date(fb.created_at).toLocaleDateString()} at {new Date(fb.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDeleteFeedback(fb.id)}
+                        title="Delete feedback"
+                      >
+                        <Trash2 className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Doctor Management Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Stethoscope className="h-5 w-5" />
+                Doctor Management
+              </span>
+              <Button size="sm" onClick={() => setShowAddDoctor(!showAddDoctor)}>
+                <Plus className="h-4 w-4 mr-1" />
+                Add Doctor
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {showAddDoctor && (
+              <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+                <h3 className="text-sm font-semibold mb-3">Add New Doctor</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Input
+                    placeholder="Name"
+                    value={newDoctor.name}
+                    onChange={(e) => setNewDoctor(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Email"
+                    type="email"
+                    value={newDoctor.email}
+                    onChange={(e) => setNewDoctor(prev => ({ ...prev, email: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Phone"
+                    value={newDoctor.phone}
+                    onChange={(e) => setNewDoctor(prev => ({ ...prev, phone: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Experience (e.g. 5 years)"
+                    value={newDoctor.experience}
+                    onChange={(e) => setNewDoctor(prev => ({ ...prev, experience: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Qualifications"
+                    value={newDoctor.qualifications}
+                    onChange={(e) => setNewDoctor(prev => ({ ...prev, qualifications: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Languages (comma separated)"
+                    value={newDoctor.languages}
+                    onChange={(e) => setNewDoctor(prev => ({ ...prev, languages: e.target.value }))}
+                  />
+                  <Input
+                    placeholder="Specialties (comma separated)"
+                    value={newDoctor.specialties}
+                    onChange={(e) => setNewDoctor(prev => ({ ...prev, specialties: e.target.value }))}
+                  />
+                  <select
+                    value={newDoctor.gender}
+                    onChange={(e) => setNewDoctor(prev => ({ ...prev, gender: e.target.value }))}
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <Button size="sm" onClick={handleAddDoctor}>
+                    Submit
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowAddDoctor(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {doctors.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No doctors found</p>
+              ) : (
+                doctors.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{doc.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {doc.specialties?.join(", ") || "No specialties"} | {doc.experience || "N/A"} experience
+                      </p>
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {doc.languages?.map((lang, i) => (
+                          <Badge key={i} variant="outline" className="text-xs">{lang}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteDoctor(doc.id)}
+                      title="Delete doctor"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   )

@@ -1,14 +1,18 @@
-import { Calendar, MessageCircle, FileText, Stethoscope, Wind, Plus, CreditCard, Clipboard, Activity } from "lucide-react"
+import { Calendar, MessageCircle, FileText, Stethoscope, Wind, Plus, CreditCard, Clipboard, Activity, Star, Send } from "lucide-react"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { useNavigate, Link } from "react-router-dom"
 import { useState, useEffect } from "react"
 import { useAuthWithFetch } from "@/hooks/useAuth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
-import { appointmentsApi, analysisApi } from "@/services/api"
-import type { Appointment as ApiAppointment, Analysis as ApiAnalysis } from "@/services/api"
+import { appointmentsApi, analysisApi, feedbackApi } from "@/services/api"
+import type { Appointment as ApiAppointment, Analysis as ApiAnalysis, FeedbackItem } from "@/services/api"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
+import { StaggerContainer, StaggerItem, FadeIn, AnimatedCounter } from "@/components/ui/animated"
 
 // Suppress unused import warnings
 void [Calendar, Stethoscope, FileText, MessageCircle]
@@ -55,6 +59,11 @@ export default function PatientDashboard() {
   })
   const [loadingData, setLoadingData] = useState(true)
   const [dataError, setDataError] = useState<string | null>(null)
+  const [feedbackSubject, setFeedbackSubject] = useState("")
+  const [feedbackMessage, setFeedbackMessage] = useState("")
+  const [feedbackRating, setFeedbackRating] = useState(0)
+  const [submittingFeedback, setSubmittingFeedback] = useState(false)
+  const [myFeedbacks, setMyFeedbacks] = useState<FeedbackItem[]>([])
 
   // Fetch appointments and analyses using API service
   useEffect(() => {
@@ -65,15 +74,17 @@ export default function PatientDashboard() {
         setLoadingData(true);
         setDataError(null);
 
-        // Fetch appointments and analyses in parallel
-        const [appointmentsData, analysesData] = await Promise.all([
+        // Fetch appointments, analyses, and feedback in parallel
+        const [appointmentsData, analysesData, feedbackData] = await Promise.all([
           appointmentsApi.getAll(),
-          analysisApi.getAll()
+          analysisApi.getAll(),
+          feedbackApi.getMine().catch(() => [] as FeedbackItem[])
         ]);
 
         // Set state with fetched data
         setAppointments(appointmentsData as any);
         setAnalyses(analysesData as any);
+        setMyFeedbacks(feedbackData);
 
         // Update dashboard stats
         const upcomingAppointments = appointmentsData.filter(
@@ -206,32 +217,34 @@ export default function PatientDashboard() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Welcome Section */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Welcome back, {user.full_name || 'Patient'}!</h1>
-            <p className="text-muted-foreground">Here's what's happening with your health today</p>
+        <FadeIn>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Welcome back, {user.full_name || 'Patient'}!</h1>
+              <p className="text-muted-foreground">Here's what's happening with your health today</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/payments/history')}
+              >
+                <CreditCard className="h-5 w-5 mr-2" />
+                Payment History
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/appointments/manage')}
+              >
+                <Calendar className="h-5 w-5 mr-2" />
+                Manage Appointments
+              </Button>
+              <Button onClick={handleScheduleAppointment}>
+                <Plus className="h-5 w-5 mr-2" />
+                Schedule New Appointment
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/payments/history')}
-            >
-              <CreditCard className="h-5 w-5 mr-2" />
-              Payment History
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/appointments/manage')}
-            >
-              <Calendar className="h-5 w-5 mr-2" />
-              Manage Appointments
-            </Button>
-            <Button onClick={handleScheduleAppointment}>
-              <Plus className="h-5 w-5 mr-2" />
-              Schedule New Appointment
-            </Button>
-          </div>
-        </div>
+        </FadeIn>
 
         {/* Patient Info Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -314,69 +327,34 @@ export default function PatientDashboard() {
         ) : (
           <>
             {/* Stats Overview */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Upcoming Appointments
-                  </CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{dashboardStats.upcomingAppointments}</div>
-                  <p className="text-xs text-green-600">
-                    Recently scheduled
-                  </p>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Completed Consultations
-                  </CardTitle>
-                  <Stethoscope className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{dashboardStats.completedConsultations}</div>
-                  <p className="text-xs text-green-600">
-                    Past consultations
-                  </p>
-                </CardContent>
-              </Card>
+            <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" delay={0.1}>
+              {[
+                { title: "Upcoming Appointments", value: dashboardStats.upcomingAppointments, icon: Calendar, sub: "Recently scheduled" },
+                { title: "Completed Consultations", value: dashboardStats.completedConsultations, icon: Stethoscope, sub: "Past consultations" },
+                { title: "Health Records", value: dashboardStats.healthRecords, icon: FileText, sub: "Available records" },
+                { title: "Messages", value: dashboardStats.messages, icon: MessageCircle, sub: "Unread messages" },
+              ].map((stat) => {
+                const Icon = stat.icon
+                return (
+                  <StaggerItem key={stat.title}>
+                    <Card className="hover:shadow-md transition-shadow duration-300">
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          <AnimatedCounter value={stat.value} />
+                        </div>
+                        <p className="text-xs text-green-600">{stat.sub}</p>
+                      </CardContent>
+                    </Card>
+                  </StaggerItem>
+                )
+              })}
+            </StaggerContainer>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Health Records
-                  </CardTitle>
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{dashboardStats.healthRecords}</div>
-                  <p className="text-xs text-green-600">
-                    Available records
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Messages
-                  </CardTitle>
-                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{dashboardStats.messages}</div>
-                  <p className="text-xs text-green-600">
-                    Unread messages
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
+            <FadeIn delay={0.3} className="grid gap-4 md:grid-cols-2">
               {/* Analysis Summary */}
               <Card>
                 <CardHeader>
@@ -408,6 +386,49 @@ export default function PatientDashboard() {
                           </p>
                         </div>
                       </div>
+
+                      {/* Disease Distribution Pie Chart */}
+                      {(() => {
+                        const PIE_COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+                        const diseaseCountMap: Record<string, number> = {};
+                        analyses.forEach((analysis) => {
+                          if (analysis.details && analysis.details.length > 0) {
+                            analysis.details.forEach((detail) => {
+                              const match = detail.match(/^(.+?):\s*([\d.]+)%?$/);
+                              if (match) {
+                                const name = match[1].trim();
+                                const pct = parseFloat(match[2]);
+                                diseaseCountMap[name] = (diseaseCountMap[name] || 0) + pct;
+                              }
+                            });
+                          }
+                        });
+                        const pieData = Object.entries(diseaseCountMap).map(([name, value]) => ({ name, value: Math.round(value * 100) / 100 }));
+                        if (pieData.length === 0) return null;
+                        return (
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-500 mb-2">Disease Distribution</h4>
+                            <ResponsiveContainer width="100%" height={250}>
+                              <PieChart>
+                                <Pie
+                                  data={pieData}
+                                  cx="50%"
+                                  cy="50%"
+                                  outerRadius={80}
+                                  dataKey="value"
+                                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                                >
+                                  {pieData.map((_entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                                  ))}
+                                </Pie>
+                                <Tooltip formatter={(value) => `${value}%`} />
+                                <Legend />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        );
+                      })()}
 
                       {/* Recent Analyses List */}
                       <div className="space-y-3">
@@ -510,9 +531,9 @@ export default function PatientDashboard() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </FadeIn>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <FadeIn delay={0.4} className="grid gap-4 md:grid-cols-2">
               {/* Health Records */}
               <Card>
                 <CardHeader>
@@ -573,8 +594,8 @@ export default function PatientDashboard() {
                           >
                             <div>
                               <h3 className="font-medium">
-                                {appointment.status === 'completed' 
-                                  ? 'Appointment Completed' 
+                                {appointment.status === 'completed'
+                                  ? 'Appointment Completed'
                                   : appointment.status === 'confirmed'
                                     ? 'Appointment Confirmed'
                                     : 'Appointment Booked'}
@@ -596,7 +617,136 @@ export default function PatientDashboard() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </FadeIn>
+
+            {/* Feedback Section */}
+            <FadeIn delay={0.5} className="grid gap-4 md:grid-cols-2">
+              {/* Feedback Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Share Your Feedback</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!feedbackSubject.trim() || !feedbackMessage.trim()) {
+                        toast.error("Please fill in both subject and message.");
+                        return;
+                      }
+                      try {
+                        setSubmittingFeedback(true);
+                        const newFeedback = await feedbackApi.create({
+                          subject: feedbackSubject,
+                          message: feedbackMessage,
+                          rating: feedbackRating > 0 ? feedbackRating : undefined,
+                        });
+                        setMyFeedbacks((prev) => [newFeedback, ...prev]);
+                        setFeedbackSubject("");
+                        setFeedbackMessage("");
+                        setFeedbackRating(0);
+                        toast.success("Thank you! Your feedback has been submitted.");
+                      } catch (err) {
+                        console.error("Error submitting feedback:", err);
+                        toast.error("Failed to submit feedback. Please try again.");
+                      } finally {
+                        setSubmittingFeedback(false);
+                      }
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">Subject</label>
+                      <Input
+                        placeholder="Enter feedback subject"
+                        value={feedbackSubject}
+                        onChange={(e) => setFeedbackSubject(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">Message</label>
+                      <Textarea
+                        placeholder="Tell us about your experience..."
+                        value={feedbackMessage}
+                        onChange={(e) => setFeedbackMessage(e.target.value)}
+                        rows={4}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">Rating</label>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setFeedbackRating(star)}
+                            className="p-1 hover:scale-110 transition-transform"
+                          >
+                            <Star
+                              className={`h-6 w-6 ${
+                                star <= feedbackRating
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <Button type="submit" disabled={submittingFeedback} className="w-full">
+                      <Send className="h-4 w-4 mr-2" />
+                      {submittingFeedback ? "Submitting..." : "Submit Feedback"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Previous Feedback */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>My Previous Feedback</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {myFeedbacks.length > 0 ? (
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                      {myFeedbacks.map((fb) => (
+                        <div
+                          key={fb.id}
+                          className="p-3 border rounded-lg"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="text-sm font-medium">{fb.subject}</h4>
+                            <span className="text-xs text-gray-400">
+                              {new Date(fb.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-1">{fb.message}</p>
+                          {fb.rating && (
+                            <div className="flex gap-0.5">
+                              {[1, 2, 3, 4, 5].map((s) => (
+                                <Star
+                                  key={s}
+                                  className={`h-3 w-3 ${
+                                    s <= fb.rating!
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "text-gray-300"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-gray-500">No feedback submitted yet</p>
+                      <p className="text-sm text-gray-400 mt-1">Use the form to share your experience</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </FadeIn>
           </>
         )}
 

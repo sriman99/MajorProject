@@ -23,14 +23,15 @@ def init_database():
         'analysis': db.analysis,
         'chat_messages': db.chat_messages,
         'notifications': db.notifications,
-        'payments': db.payments
+        'payments': db.payments,
+        'feedback': db.feedback
     }
 
     print("Creating indexes...")
 
     # Create indexes for users collection
     collections['users'].create_index([("email", ASCENDING)], unique=True)
-    collections['users'].create_index([("phone", ASCENDING)], unique=True, sparse=True)
+    collections['users'].create_index([("phone", ASCENDING)], sparse=True)
     collections['users'].create_index([("role", ASCENDING)])
     collections['users'].create_index([("id", ASCENDING)], unique=True)
 
@@ -89,6 +90,11 @@ def init_database():
     collections['payments'].create_index([("appointment_id", ASCENDING)])
     collections['payments'].create_index([("status", ASCENDING)])
     collections['payments'].create_index([("created_at", DESCENDING)])
+
+    # Create indexes for feedback collection
+    collections['feedback'].create_index([("id", ASCENDING)], unique=True)
+    collections['feedback'].create_index([("user_id", ASCENDING)])
+    collections['feedback'].create_index([("created_at", DESCENDING)])
 
     print("\n" + "="*50)
     print("DATABASE INITIALIZED SUCCESSFULLY!")

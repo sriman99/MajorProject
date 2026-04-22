@@ -34,7 +34,8 @@ from database import (
     get_appointments_collection,
     get_analysis_collection,
     get_payments_collection,
-    get_notifications_collection
+    get_notifications_collection,
+    get_feedback_collection
 )
 from email_service import (
     send_welcome_email,
@@ -112,16 +113,8 @@ class UserCreate(UserBase):
     @validator('password')
     def password_strength(cls, v):
         """Validate password strength"""
-        if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long')
-        if not any(char.isdigit() for char in v):
-            raise ValueError('Password must contain at least one digit')
-        if not any(char.isupper() for char in v):
-            raise ValueError('Password must contain at least one uppercase letter')
-        if not any(char.islower() for char in v):
-            raise ValueError('Password must contain at least one lowercase letter')
-        if not any(char in '!@#$%^&*()_+-=[]{}|;:,.<>?' for char in v):
-            raise ValueError('Password must contain at least one special character')
+        if len(v) < 6:
+            raise ValueError('Password must be at least 6 characters long')
         return v
 
     @validator('confirm_password')
@@ -215,8 +208,8 @@ class Appointment(AppointmentBase):
 class AnalysisBase(BaseModel):
     user_id: str
     file_path: str
-    analysis_type: Literal["audio", "file"]
-    status: Literal["normal", "warning", "critical"]
+    analysis_type: Optional[Literal["audio", "file"]] = None
+    status: Optional[Literal["normal", "warning", "critical"]] = None
     message: str
     details: List[str]
 
@@ -333,7 +326,7 @@ class Payment(BaseModel):
     user_id: str
     appointment_id: str
     amount: float
-    status: Literal["success", "pending", "failed"]
+    status: Literal["success", "pending", "failed", "completed"]
     payment_method: str
     created_at: str
 
@@ -344,7 +337,7 @@ class NotificationCreate(BaseModel):
     user_id: str
     title: str
     message: str
-    type: Literal["appointment", "message", "alert", "success"]
+    type: Literal["appointment", "message", "alert", "success", "analysis", "system"]
     link: Optional[str] = None
 
 class Notification(BaseModel):
@@ -352,7 +345,7 @@ class Notification(BaseModel):
     user_id: str
     title: str
     message: str
-    type: Literal["appointment", "message", "alert", "success"]
+    type: Literal["appointment", "message", "alert", "success", "analysis", "system"]
     link: Optional[str] = None
     is_read: bool = False
     created_at: str
@@ -363,6 +356,37 @@ class Notification(BaseModel):
 class NotificationsResponse(BaseModel):
     notifications: List[Notification]
     unread_count: int
+
+class FeedbackCreate(BaseModel):
+    subject: str
+    message: str
+    rating: Optional[int] = None  # 1-5 star rating
+
+class Feedback(BaseModel):
+    id: str
+    user_id: str
+    user_name: str
+    user_email: str
+    subject: str
+    message: str
+    rating: Optional[int] = None
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+class AdminDoctorCreate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str
+    experience: str
+    qualifications: str
+    languages: List[str]
+    specialties: List[str]
+    gender: Literal["male", "female", "other"]
+    image_url: Optional[str] = None
+    locations: Optional[List[Dict[str, Any]]] = []
+    timings: Optional[Dict[str, str]] = {"hours": "", "days": ""}
 
 # =============================================
 # HELPER FUNCTIONS
@@ -1826,14 +1850,14 @@ async def get_analysis(current_user = Depends(get_current_active_user)):
 
     return [
         Analysis(
-            id=analysis["id"],
-            user_id=analysis["user_id"],
-            file_path=analysis["file_path"],
-            analysis_type=analysis["analysis_type"],
-            status=analysis["status"],
-            message=analysis["message"],
-            details=analysis["details"],
-            created_at=analysis["created_at"]
+            id=analysis.get("id", str(analysis.get("_id", ""))),
+            user_id=analysis.get("user_id", ""),
+            file_path=analysis.get("file_path", ""),
+            analysis_type=analysis.get("analysis_type"),
+            status=analysis.get("status"),
+            message=analysis.get("message", ""),
+            details=analysis.get("details", []),
+            created_at=analysis.get("created_at", "")
         ) for analysis in analyses
     ]
 
@@ -2128,6 +2152,150 @@ async def get_payment(payment_id: str, current_user = Depends(get_current_active
         payment_method=payment["payment_method"],
         created_at=payment["created_at"]
     )
+
+# =============================================
+# FEEDBACK ENDPOINTS
+# =============================================
+
+@app.post("/feedback", response_model=Feedback)
+async def create_feedback(
+    feedback: FeedbackCreate,
+    current_user = Depends(get_current_active_user)
+):
+    feedback_collection = get_feedback_collection()
+
+    feedback_dict = {
+        "id": str(uuid.uuid4()),
+        "user_id": current_user["id"],
+        "user_name": current_user["full_name"],
+        "user_email": current_user["email"],
+        "subject": feedback.subject,
+        "message": feedback.message,
+        "rating": feedback.rating,
+        "created_at": datetime.utcnow().isoformat()
+    }
+
+    await feedback_collection.insert_one(feedback_dict)
+
+    # Notify admin about new feedback
+    try:
+        users_collection = get_users_collection()
+        admins = await users_collection.find({"role": "admin"}).to_list(length=None)
+        notifications_collection = get_notifications_collection()
+        for admin in admins:
+            await notifications_collection.insert_one({
+                "id": str(uuid.uuid4()),
+                "user_id": admin["id"],
+                "title": "New Feedback Received",
+                "message": f"New feedback from {current_user['full_name']}: {feedback.subject}",
+                "type": "alert",
+                "link": "/admin/feedback",
+                "is_read": False,
+                "created_at": datetime.utcnow().isoformat()
+            })
+    except Exception:
+        pass  # Don't block feedback creation if notification fails
+
+    return Feedback(**feedback_dict)
+
+@app.get("/feedback", response_model=List[Feedback])
+async def get_my_feedback(current_user = Depends(get_current_active_user)):
+    feedback_collection = get_feedback_collection()
+    feedbacks = await feedback_collection.find(
+        {"user_id": current_user["id"]}
+    ).sort("created_at", -1).to_list(length=None)
+    return [Feedback(**f) for f in feedbacks]
+
+@app.get("/admin/feedback", response_model=List[Feedback])
+async def get_all_feedback(current_user = Depends(check_admin_role)):
+    feedback_collection = get_feedback_collection()
+    feedbacks = await feedback_collection.find().sort("created_at", -1).to_list(length=None)
+    return [Feedback(**f) for f in feedbacks]
+
+@app.delete("/admin/feedback/{feedback_id}")
+async def delete_feedback(feedback_id: str, current_user = Depends(check_admin_role)):
+    feedback_collection = get_feedback_collection()
+    result = await feedback_collection.delete_one({"id": feedback_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return {"message": "Feedback deleted successfully"}
+
+# =============================================
+# ADMIN DOCTOR MANAGEMENT ENDPOINTS
+# =============================================
+
+@app.post("/admin/doctors", response_model=Doctor)
+async def admin_create_doctor(
+    doctor_data: AdminDoctorCreate,
+    current_user = Depends(check_admin_role)
+):
+    users_collection = get_users_collection()
+    doctors_collection = get_doctors_collection()
+
+    # Check if email already exists
+    existing_user = await users_collection.find_one({"email": doctor_data.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Create user account for the doctor
+    user_id = str(uuid.uuid4())
+    from urllib.parse import quote
+    user_dict = {
+        "id": user_id,
+        "email": doctor_data.email,
+        "full_name": doctor_data.name,
+        "phone": doctor_data.phone,
+        "role": "doctor",
+        "username": doctor_data.email,
+        "password": pwd_context.hash("Doctor@123"),  # Default password
+        "is_active": True,
+        "avatar_url": f"https://ui-avatars.com/api/?name={quote(doctor_data.name)}&background=3b82f6&color=fff&size=200&bold=true"
+    }
+    await users_collection.insert_one(user_dict)
+
+    # Create doctor profile
+    doctor_id = str(uuid.uuid4())
+    doctor_dict = {
+        "id": doctor_id,
+        "user_id": user_id,
+        "name": doctor_data.name,
+        "experience": doctor_data.experience,
+        "qualifications": doctor_data.qualifications,
+        "languages": doctor_data.languages,
+        "specialties": doctor_data.specialties,
+        "gender": doctor_data.gender,
+        "image_url": doctor_data.image_url or f"https://ui-avatars.com/api/?name={quote(doctor_data.name)}&background=3b82f6&color=fff&size=200&bold=true",
+        "locations": doctor_data.locations or [],
+        "timings": doctor_data.timings or {"hours": "", "days": ""}
+    }
+    await doctors_collection.insert_one(doctor_dict)
+
+    return Doctor(**doctor_dict)
+
+@app.delete("/admin/doctors/{doctor_id}")
+async def admin_delete_doctor(
+    doctor_id: str,
+    current_user = Depends(check_admin_role)
+):
+    doctors_collection = get_doctors_collection()
+    users_collection = get_users_collection()
+
+    # Find the doctor
+    doctor = await doctors_collection.find_one({"id": doctor_id})
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    # Delete the doctor profile
+    await doctors_collection.delete_one({"id": doctor_id})
+
+    # Deactivate the associated user account (soft delete)
+    if doctor.get("user_id"):
+        await users_collection.update_one(
+            {"id": doctor["user_id"]},
+            {"$set": {"is_active": False}}
+        )
+
+    return {"message": f"Doctor {doctor['name']} has been removed successfully"}
 
 # =============================================
 # ROOT ENDPOINT

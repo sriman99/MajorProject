@@ -576,5 +576,78 @@ export const notificationsApi = {
   },
 };
 
+// =============================================
+// FEEDBACK API
+// =============================================
+
+export interface FeedbackItem {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  subject: string;
+  message: string;
+  rating: number | null;
+  created_at: string;
+}
+
+export interface FeedbackCreate {
+  subject: string;
+  message: string;
+  rating?: number;
+}
+
+export const feedbackApi = {
+  create: async (data: FeedbackCreate): Promise<FeedbackItem> => {
+    const response = await apiClient.post<FeedbackItem>('/feedback', data);
+    return response.data;
+  },
+
+  getMine: async (): Promise<FeedbackItem[]> => {
+    const response = await apiClient.get<FeedbackItem[]>('/feedback');
+    return response.data;
+  },
+
+  getAll: async (): Promise<FeedbackItem[]> => {
+    const response = await apiClient.get<FeedbackItem[]>('/admin/feedback');
+    return response.data;
+  },
+
+  delete: async (feedbackId: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete<{ message: string }>(`/admin/feedback/${feedbackId}`);
+    return response.data;
+  },
+};
+
+// =============================================
+// ADMIN DOCTOR MANAGEMENT API
+// =============================================
+
+export interface AdminDoctorCreate {
+  name: string;
+  email: string;
+  phone: string;
+  experience: string;
+  qualifications: string;
+  languages: string[];
+  specialties: string[];
+  gender: 'male' | 'female' | 'other';
+  image_url?: string;
+  locations?: Array<{ name: string; address: string }>;
+  timings?: { hours: string; days: string };
+}
+
+export const adminDoctorsApi = {
+  create: async (data: AdminDoctorCreate): Promise<Doctor> => {
+    const response = await apiClient.post<Doctor>('/admin/doctors', data);
+    return response.data;
+  },
+
+  delete: async (doctorId: string): Promise<{ message: string }> => {
+    const response = await apiClient.delete<{ message: string }>(`/admin/doctors/${doctorId}`);
+    return response.data;
+  },
+};
+
 // Export the axios instance for custom requests
 export default apiClient;

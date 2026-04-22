@@ -1,4 +1,5 @@
 import { Calendar, Stethoscope, Clock, Users, CheckCircle2, Plus, RefreshCw } from "lucide-react"
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from "recharts"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,7 @@ import { useAuthWithFetch } from "@/hooks/useAuth"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { doctorsApi, appointmentsApi, type DoctorStats, type PatientInfo, type AppointmentWithPatient } from "@/services/api"
+import { StaggerContainer, StaggerItem, FadeIn, AnimatedCounter } from "@/components/ui/animated"
 
 export default function DoctorDashboard() {
   const navigate = useNavigate()
@@ -229,11 +231,12 @@ export default function DoctorDashboard() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Welcome Section */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Welcome back, Dr. {name}!</h1>
-            <p className="text-muted-foreground">Here's your practice overview</p>
-          </div>
+        <FadeIn>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Welcome back, Dr. {name}!</h1>
+              <p className="text-muted-foreground">Here's your practice overview</p>
+            </div>
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
@@ -258,6 +261,7 @@ export default function DoctorDashboard() {
             </Button>
           </div>
         </div>
+        </FadeIn>
 
         {/* Doctor Info Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -310,32 +314,109 @@ export default function DoctorDashboard() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-4" delay={0.1}>
           {statsCards.map((stat) => {
             const Icon = stat.icon
             return (
-              <Card
-                key={stat.title}
-                className={`${stat.bgColor} hover:shadow-lg transition-all duration-300 cursor-pointer`}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className={`text-sm font-medium ${stat.color}`}>
-                    {stat.title}
-                  </CardTitle>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className={`text-xs ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                    {stat.change} from yesterday
-                  </p>
-                </CardContent>
-              </Card>
+              <StaggerItem key={stat.title}>
+                <Card
+                  className={`${stat.bgColor} hover:shadow-lg transition-all duration-300 cursor-pointer`}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className={`text-sm font-medium ${stat.color}`}>
+                      {stat.title}
+                    </CardTitle>
+                    <Icon className={`h-4 w-4 ${stat.color}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      <AnimatedCounter value={Number(stat.value)} />
+                    </div>
+                    <p className={`text-xs ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+                      {stat.change} from yesterday
+                    </p>
+                  </CardContent>
+                </Card>
+              </StaggerItem>
             )
           })}
-        </div>
+        </StaggerContainer>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        {/* Charts Section */}
+        <FadeIn delay={0.3} className="grid gap-4 md:grid-cols-2">
+          {/* Appointment Status Distribution */}
+          <Card className="hover:shadow-lg transition-all duration-300">
+            <CardHeader>
+              <CardTitle>Appointment Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: "Today's Appointments", value: stats?.todays_appointments || 0 },
+                      { name: "Pending Appointments", value: stats?.pending_appointments || 0 },
+                      { name: "Completed This Week", value: stats?.completed_this_week || 0 },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={5}
+                    dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}`}
+                  >
+                    {['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6'].map((color, index) => (
+                      <Cell key={`cell-${index}`} fill={color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Weekly Performance */}
+          <Card className="hover:shadow-lg transition-all duration-300">
+            <CardHeader>
+              <CardTitle>Practice Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart
+                  data={[
+                    {
+                      name: "Patients",
+                      value: stats?.total_patients || 0,
+                    },
+                    {
+                      name: "Appointments",
+                      value: stats?.todays_appointments || 0,
+                    },
+                    {
+                      name: "Completed",
+                      value: stats?.completed_this_week || 0,
+                    },
+                  ]}
+                  margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+                >
+                  <XAxis dataKey="name" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="value" name="Count" radius={[4, 4, 0, 0]}>
+                    <Cell fill="#3b82f6" />
+                    <Cell fill="#f59e0b" />
+                    <Cell fill="#10b981" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </FadeIn>
+
+        <FadeIn delay={0.4} className="grid gap-4 md:grid-cols-2">
           {/* Today's Appointments */}
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between">
@@ -472,7 +553,7 @@ export default function DoctorDashboard() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </FadeIn>
       </div>
 
     </DashboardLayout>
