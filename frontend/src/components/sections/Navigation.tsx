@@ -1,16 +1,18 @@
 import { Button } from "../ui/button"
 import { MobileMenu } from "../ui/mobile-menu"
 import { Link, useNavigate } from "react-router-dom"
-import { UserCircle, LogOut, Stethoscope, Calendar, MessageCircle } from "lucide-react"
+import { UserCircle, LogOut, Stethoscope, Calendar, MessageCircle, Sun, Moon } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
 import { useUserRole } from "@/hooks/useUserRole"
 import { NotificationCenter } from "../NotificationCenter"
+import { useTheme } from "@/hooks/useTheme"
 
 export function Navigation() {
   const navigate = useNavigate()
   const { isLoggedIn, logout, user } = useAuth()
   const { data: userRoleData } = useUserRole()
+  const { isDark, toggle } = useTheme()
   
   // Determine user role
   const isDoctor = userRoleData?.role === 'doctor' || 
@@ -41,19 +43,19 @@ export function Navigation() {
     if (isDoctor) {
       return (
         <>
-          <Link to="/" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+          <Link to="/" className="text-foreground hover:text-[#ff7757] transition-colors relative group">
             Home
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
           </Link>
-          <Link to="/doctor/dashboard" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+          <Link to="/doctor/dashboard" className="text-foreground hover:text-[#ff7757] transition-colors relative group">
             Dashboard
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
           </Link>
-          <Link to="/appointments/manage" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+          <Link to="/appointments/manage" className="text-foreground hover:text-[#ff7757] transition-colors relative group">
             Appointments
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
           </Link>
-          <Link to="/contact" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+          <Link to="/contact" className="text-foreground hover:text-[#ff7757] transition-colors relative group">
             Contact
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
           </Link>
@@ -62,19 +64,19 @@ export function Navigation() {
     } else {
       return (
         <>
-          <Link to="/" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+          <Link to="/" className="text-foreground hover:text-[#ff7757] transition-colors relative group">
             Home
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
           </Link>
-          <Link to="/features" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+          <Link to="/features" className="text-foreground hover:text-[#ff7757] transition-colors relative group">
             Features
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
           </Link>
-          <Link to="/how-it-works" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+          <Link to="/how-it-works" className="text-foreground hover:text-[#ff7757] transition-colors relative group">
             How it works
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
           </Link>
-          <Link to="/contact" className="text-[#1a2352] hover:text-[#ff7757] transition-colors relative group">
+          <Link to="/contact" className="text-foreground hover:text-[#ff7757] transition-colors relative group">
             Contact
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#ff7757] group-hover:w-full transition-all duration-300"></span>
           </Link>
@@ -84,12 +86,12 @@ export function Navigation() {
   };
 
   return (
-    <nav className="container mx-auto px-5 py-2 flex items-center justify-between border-b border-gray-100/50">
+    <nav className="container mx-auto px-5 py-2 flex items-center justify-between border-b border-border">
       <div className="flex items-center">
-        {/* <span  className="text-2xl font-bold ml-2 text-[#1a2352] font-display bg-gradient-to-r from-[#1a2352] to-[#ff7757] bg-clip-text text-transparent cursor-pointer"><Link to={"/"}>NeumoAI</Link></span>
+        {/* <span  className="text-2xl font-bold ml-2 text-foreground font-display bg-gradient-to-r from-[#1a2352] to-[#ff7757] bg-clip-text text-transparent cursor-pointer"><Link to={"/"}>NeumoAI</Link></span>
          */}
          <Link to={"/"}>
-         <img src="/logo.png" alt="NeumoAI Logo" className="w-25 h-15" />
+         <img src="/logo.png" alt="NeumoAI Logo" className="w-25 h-15 dark:brightness-0 dark:invert" />
          </Link>
       </div>
       <div className="hidden md:flex items-center space-x-8">
@@ -99,13 +101,16 @@ export function Navigation() {
           {isLoggedIn ? (
             <>
               <NotificationCenter />
+              <Button variant="ghost" size="sm" onClick={toggle} title={isDark ? "Light mode" : "Dark mode"}>
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
               <Button
                 variant="ghost"
-                className="text-[#1a2352] hover:text-[#ff7757] transition-colors"
+                className="text-foreground hover:text-[#ff7757] transition-colors"
                 onClick={handleProfile}
               >
                 {isDoctor ? <Stethoscope className="w-5 h-5 mr-2" /> : <UserCircle className="w-5 h-5 mr-2" />}
-                {isDoctor ? "Doctor Profile" : "Profile"}
+                {user?.full_name || "Profile"}
               </Button>
               <Button
                 variant="outline"

@@ -159,7 +159,7 @@ export default function DoctorDashboard() {
         <div className="flex items-center justify-center h-[50vh]">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
-            <p className="text-gray-600">{userError || error}</p>
+            <p className="text-muted-foreground">{userError || error}</p>
             <Button className="mt-4" onClick={() => window.location.reload()}>
               Try Again
             </Button>
@@ -175,7 +175,7 @@ export default function DoctorDashboard() {
         <div className="flex items-center justify-center h-[50vh]">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-2">Not Logged In</h2>
-            <p className="text-gray-600">Please log in to view your dashboard</p>
+            <p className="text-muted-foreground">Please log in to view your dashboard</p>
             <Button className="mt-4" onClick={() => navigate('/login')}>
               Go to Login
             </Button>
@@ -270,7 +270,7 @@ export default function DoctorDashboard() {
               <CardTitle>Qualifications</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-gray-600">{qualifications}</p>
+              <p className="text-sm text-muted-foreground">{qualifications}</p>
             </CardContent>
           </Card>
 
@@ -287,7 +287,7 @@ export default function DoctorDashboard() {
                     </span>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500">No specialties specified</p>
+                  <p className="text-sm text-muted-foreground">No specialties specified</p>
                 )}
               </div>
             </CardContent>
@@ -306,7 +306,7 @@ export default function DoctorDashboard() {
                     </span>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500">No languages specified</p>
+                  <p className="text-sm text-muted-foreground">No languages specified</p>
                 )}
               </div>
             </CardContent>
@@ -447,13 +447,13 @@ export default function DoctorDashboard() {
                   {filteredAppointments.map((appointment) => (
                     <div
                       key={appointment.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors group"
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted transition-colors group"
                     >
                       <div>
                         <h3 className="font-medium group-hover:text-primary transition-colors">
                           {appointment.patient?.name || `Patient (ID: ${appointment.patient_id})`}
                         </h3>
-                        <p className="text-sm text-gray-500">{appointment.time}</p>
+                        <p className="text-sm text-muted-foreground">{appointment.time}</p>
                         <div className="flex gap-2 mt-1">
                           <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">
                             {appointment.reason}
@@ -486,8 +486,8 @@ export default function DoctorDashboard() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-40">
-                  <Calendar className="h-10 w-10 text-gray-400 mb-4" />
-                  <p className="text-gray-500">No appointments for today</p>
+                  <Calendar className="h-10 w-10 text-muted-foreground/70 mb-4" />
+                  <p className="text-muted-foreground">No appointments for today</p>
                   <Button
                     variant="outline"
                     size="sm"
@@ -516,19 +516,19 @@ export default function DoctorDashboard() {
                   {recentPatients.map((patient) => (
                     <div
                       key={patient.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors group cursor-pointer"
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted transition-colors group cursor-pointer"
                       onClick={() => handleViewPatient(patient.id)}
                     >
                       <div>
                         <h3 className="font-medium group-hover:text-primary transition-colors">
                           {patient.name}
                         </h3>
-                        <p className="text-sm text-gray-500">{patient.email}</p>
-                        <p className="text-xs text-gray-400">{patient.phone}</p>
+                        <p className="text-sm text-muted-foreground">{patient.email}</p>
+                        <p className="text-xs text-muted-foreground/70">{patient.phone}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-gray-500 font-medium">Last visit:</p>
-                        <p className="text-sm text-gray-700">
+                        <p className="text-xs text-muted-foreground font-medium">Last visit:</p>
+                        <p className="text-sm text-foreground">
                           {patient.last_appointment_date
                             ? new Date(patient.last_appointment_date).toLocaleDateString()
                             : 'N/A'}
@@ -539,8 +539,8 @@ export default function DoctorDashboard() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-40">
-                  <Users className="h-10 w-10 text-gray-400 mb-4" />
-                  <p className="text-gray-500">No patients found</p>
+                  <Users className="h-10 w-10 text-muted-foreground/70 mb-4" />
+                  <p className="text-muted-foreground">No patients found</p>
                   <Button
                     variant="outline"
                     size="sm"

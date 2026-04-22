@@ -88,8 +88,10 @@ export default function AdminDashboard() {
       setDoctors(doctorsData)
     } catch (err: any) {
       console.error("Failed to fetch dashboard data:", err)
-      setError(err.response?.data?.detail || "Failed to load dashboard data")
-      toast.error("Failed to load dashboard data")
+      const detail = err.response?.data?.detail
+      const msg = typeof detail === 'string' ? detail : "Failed to load dashboard data"
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -172,7 +174,9 @@ export default function AdminDashboard() {
       setShowAddDoctor(false)
       toast.success("Doctor added successfully")
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to add doctor")
+      const detail = err.response?.data?.detail
+      const msg = typeof detail === 'string' ? detail : Array.isArray(detail) ? detail.map((d: any) => d.msg).join(', ') : "Failed to add doctor"
+      toast.error(msg)
     }
   }
 
@@ -249,7 +253,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-center h-[50vh]">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
-            <p className="text-gray-600">{authError || error}</p>
+            <p className="text-muted-foreground">{authError || error}</p>
             <Button className="mt-4" onClick={() => window.location.reload()}>
               Try Again
             </Button>
@@ -265,7 +269,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-center h-[50vh]">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-2">Not Logged In</h2>
-            <p className="text-gray-600">Please log in to view your dashboard</p>
+            <p className="text-muted-foreground">Please log in to view your dashboard</p>
             <Button className="mt-4" onClick={() => window.location.href = '/login'}>
               Go to Login
             </Button>
@@ -284,7 +288,7 @@ export default function AdminDashboard() {
       case "user":
         return "bg-green-100 text-green-800 border-green-300"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300"
+        return "bg-gray-100 text-foreground border-gray-300"
     }
   }
 
@@ -299,7 +303,7 @@ export default function AdminDashboard() {
       case "cancelled":
         return "bg-red-100 text-red-800 border-red-300"
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300"
+        return "bg-gray-100 text-foreground border-gray-300"
     }
   }
 
@@ -310,7 +314,7 @@ export default function AdminDashboard() {
         <FadeIn>
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Welcome, {user.full_name || 'Admin'}</h1>
+              <h1 className="text-3xl font-bold text-foreground">Welcome, {user.full_name || 'Admin'}</h1>
               <p className="text-muted-foreground">Administrator Dashboard</p>
             </div>
           <Button onClick={handleRefresh} disabled={refreshing}>
@@ -328,16 +332,16 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   <span className="font-medium">Email:</span> {user.email || 'Not specified'}
                 </p>
-                <p className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   <span className="font-medium">Role:</span>{' '}
                   <Badge className={getRoleBadgeColor(user.role)}>{user.role}</Badge>
-                </p>
+                </div>
                 <div className="flex items-center space-x-2">
                   <span className={`h-2 w-2 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     {user.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
@@ -412,21 +416,21 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="space-y-3 max-h-[400px] overflow-y-auto">
                 {data.users.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">No users found</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">No users found</p>
                 ) : (
                   data.users.map((u) => (
                     <div
                       key={u.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted transition-colors"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{u.full_name}</p>
-                        <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
                         <div className="flex gap-2 mt-1">
                           <Badge className={getRoleBadgeColor(u.role)} variant="outline">
                             {u.role}
                           </Badge>
-                          <Badge variant="outline" className={u.is_active ? "bg-green-50 text-green-700 border-green-300" : "bg-gray-50 text-gray-700 border-gray-300"}>
+                          <Badge variant="outline" className={u.is_active ? "bg-green-50 text-green-700 border-green-300" : "bg-muted text-gray-700 border-gray-300"}>
                             {u.is_active ? 'Active' : 'Inactive'}
                           </Badge>
                         </div>
@@ -458,7 +462,7 @@ export default function AdminDashboard() {
                 )}
               </div>
               {data.usersTotal > 10 && (
-                <p className="text-xs text-gray-500 text-center mt-3">
+                <p className="text-xs text-muted-foreground text-center mt-3">
                   Showing 10 of {data.usersTotal} users
                 </p>
               )}
@@ -476,21 +480,21 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="space-y-3 max-h-[400px] overflow-y-auto">
                 {data.appointments.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">No appointments found</p>
+                  <p className="text-sm text-muted-foreground text-center py-4">No appointments found</p>
                 ) : (
                   data.appointments.map((appointment) => (
                     <div
                       key={appointment.id}
-                      className="flex items-start justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-start justify-between p-3 border rounded-lg hover:bg-muted transition-colors"
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">
                           {appointment.patient_name} - {appointment.doctor_name}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {appointment.date} at {appointment.time}
                         </p>
-                        <p className="text-xs text-gray-600 mt-1 truncate">
+                        <p className="text-xs text-muted-foreground mt-1 truncate">
                           Reason: {appointment.reason}
                         </p>
                         <Badge className={getStatusBadgeColor(appointment.status)} variant="outline">
@@ -502,7 +506,7 @@ export default function AdminDashboard() {
                 )}
               </div>
               {data.appointmentsTotal > 10 && (
-                <p className="text-xs text-gray-500 text-center mt-3">
+                <p className="text-xs text-muted-foreground text-center mt-3">
                   Showing 10 of {data.appointmentsTotal} appointments
                 </p>
               )}
@@ -618,10 +622,10 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="space-y-3 max-h-[500px] overflow-y-auto">
               {feedbacks.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-8">No feedback submitted yet</p>
+                <p className="text-sm text-muted-foreground text-center py-8">No feedback submitted yet</p>
               ) : (
                 feedbacks.map((fb) => (
-                  <div key={fb.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={fb.id} className="p-4 border rounded-lg hover:bg-muted transition-colors">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -637,9 +641,9 @@ export default function AdminDashboard() {
                             </div>
                           )}
                         </div>
-                        <p className="text-sm font-semibold text-gray-800">{fb.subject}</p>
-                        <p className="text-sm text-gray-600 mt-1">{fb.message}</p>
-                        <p className="text-xs text-gray-400 mt-2">
+                        <p className="text-sm font-semibold text-foreground">{fb.subject}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{fb.message}</p>
+                        <p className="text-xs text-muted-foreground/70 mt-2">
                           {new Date(fb.created_at).toLocaleDateString()} at {new Date(fb.created_at).toLocaleTimeString()}
                         </p>
                       </div>
@@ -675,7 +679,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             {showAddDoctor && (
-              <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+              <div className="mb-6 p-4 border rounded-lg bg-muted">
                 <h3 className="text-sm font-semibold mb-3">Add New Doctor</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <Input
@@ -737,16 +741,16 @@ export default function AdminDashboard() {
 
             <div className="space-y-3 max-h-[400px] overflow-y-auto">
               {doctors.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">No doctors found</p>
+                <p className="text-sm text-muted-foreground text-center py-4">No doctors found</p>
               ) : (
                 doctors.map((doc) => (
                   <div
                     key={doc.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted transition-colors"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{doc.name}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         {doc.specialties?.join(", ") || "No specialties"} | {doc.experience || "N/A"} experience
                       </p>
                       <div className="flex gap-1 mt-1 flex-wrap">

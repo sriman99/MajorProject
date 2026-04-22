@@ -13,7 +13,7 @@ import { UploadIcon, MicIcon, Loader2, Calendar, Clock, FileText, Volume2, Info,
 import { useAuth } from "../hooks/useAuth"
 import { useNavigate, Link } from 'react-router-dom'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "../components/ui/dialog"
-import { doctorsApi, hospitalsApi, type Doctor, type Hospital } from "../services/api"
+import { doctorsApi, hospitalsApi, analysisApi, type Doctor, type Hospital } from "../services/api"
 
 // Backend response format from documentation
 type BackendAnalysisResponse = {
@@ -65,6 +65,12 @@ type SafeAnalysisResponse = {
   }
   id?: string
   createdAt?: string
+  // ML prediction results for detailed analysis
+  prediction?: {
+    disease?: string
+    confidence?: number
+    predictions?: Record<string, number>
+  }
 }
 
 export default function RespiratoryAnalysis() {
@@ -90,10 +96,10 @@ export default function RespiratoryAnalysis() {
   if (!isLoggedIn) {
     return (
       <div className="container max-w-4xl mx-auto py-12 px-4 text-center">
-        <h1 className="text-3xl font-bold text-center text-[#1a2352] mb-2">
+        <h1 className="text-3xl font-bold text-center text-foreground mb-2">
           Respiratory Analysis
         </h1>
-        <p className="text-center text-gray-600 mb-8">
+        <p className="text-center text-muted-foreground mb-8">
           Please log in to access the respiratory analysis feature
         </p>
         <Button onClick={() => navigate('/login')} className="bg-[#ff7757] hover:bg-[#e85d3d] text-white px-8">
@@ -201,6 +207,23 @@ export default function RespiratoryAnalysis() {
       const backendResponse: BackendAnalysisResponse = await response.json()
       console.log("Server response data:", backendResponse)
       
+      // Parse prediction data from details array
+      let disease = ''
+      let confidence = 0
+      const predictions: Record<string, number> = {}
+      if (backendResponse.details && Array.isArray(backendResponse.details)) {
+        for (const detail of backendResponse.details) {
+          const conditionMatch = detail.match(/Detected condition:\s*(.+)/i)
+          if (conditionMatch) disease = conditionMatch[1].trim()
+          const confMatch = detail.match(/Confidence level:\s*([\d.]+)%/i)
+          if (confMatch) confidence = parseFloat(confMatch[1]) / 100
+          const predMatch = detail.match(/^(\w[\w\s]*?):\s*([\d.]+)%$/i)
+          if (predMatch && !detail.includes('Detected') && !detail.includes('Confidence')) {
+            predictions[predMatch[1].trim()] = parseFloat(predMatch[2]) / 100
+          }
+        }
+      }
+
       // Convert backend response to the format the frontend expects
       const transformedResult: SafeAnalysisResponse = {
         id: backendResponse.id,
@@ -210,16 +233,16 @@ export default function RespiratoryAnalysis() {
         status: backendResponse.status,
         message: backendResponse.message,
         createdAt: backendResponse.created_at,
-        // Use a risk level based on the status
         details: {
           score: calculateScoreFromStatus(backendResponse.status),
           risk: mapStatusToRisk(backendResponse.status),
           patterns: {
-            wheezing: 0.2,     // Default values since the backend doesn't provide these
+            wheezing: 0.2,
             coughing: 0.3,
             shortness_of_breath: 0.1
           }
-        }
+        },
+        prediction: disease ? { disease, confidence, predictions } : undefined
       }
       
       setAnalysisResult(transformedResult)
@@ -289,10 +312,10 @@ export default function RespiratoryAnalysis() {
 
   return (
     <div className="container max-w-4xl mx-auto py-12 px-4">
-      <h1 className="text-3xl font-bold text-center text-[#1a2352] mb-2">
+      <h1 className="text-3xl font-bold text-center text-foreground mb-2">
             Respiratory Analysis
           </h1>
-      <p className="text-center text-gray-600 mb-8">
+      <p className="text-center text-muted-foreground mb-8">
         Upload a recording of your breathing or record it live for analysis
       </p>
 
@@ -312,7 +335,7 @@ export default function RespiratoryAnalysis() {
                   className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
                     uploadedFile
                       ? "border-green-500 bg-green-50"
-                      : "border-gray-300 hover:border-[#ff7757] hover:bg-gray-50"
+                      : "border-gray-300 hover:border-[#ff7757] hover:bg-muted"
                   }`}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleFileDrop}
@@ -333,7 +356,7 @@ export default function RespiratoryAnalysis() {
                           <CheckIcon className="w-8 h-8 text-green-600" />
                         </div>
                         <p className="text-lg font-medium mb-1">{uploadedFile.name}</p>
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-muted-foreground mb-4">
                           {formatFileSize(uploadedFile.size)}
                         </p>
                         <p className="text-sm text-[#ff7757]">
@@ -342,16 +365,16 @@ export default function RespiratoryAnalysis() {
                       </>
                     ) : (
                       <>
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
                           <UploadIcon className="w-8 h-8 text-gray-400" />
                         </div>
                         <p className="text-lg font-medium mb-1">
                           Drag & drop your audio file
                         </p>
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-muted-foreground mb-4">
                           or click to browse files
                         </p>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           Supports WAV, MP3, AAC, FLAC
                         </p>
                       </>
@@ -391,7 +414,7 @@ export default function RespiratoryAnalysis() {
                     <MicIcon className="w-10 h-10 text-[#ff7757]" />
                   </div>
                   <h3 className="text-xl font-medium mb-2">Record Your Breathing</h3>
-                  <p className="text-gray-600 max-w-md mx-auto">
+                  <p className="text-muted-foreground max-w-md mx-auto">
                     Make sure you're in a quiet environment. The recording will
                     last for 30 seconds.
                   </p>
@@ -431,7 +454,31 @@ function AnalysisResults({
   const [doctors, setDoctors] = useState<Doctor[]>([])
   const [hospitals, setHospitals] = useState<Hospital[]>([])
   const [loadingRecommendations, setLoadingRecommendations] = useState(true)
+  const [detailedReport, setDetailedReport] = useState<string | null>(null)
+  const [loadingReport, setLoadingReport] = useState(false)
   const navigate = useNavigate()
+
+  const handleViewDetailedReport = async () => {
+    setIsReportModalOpen(true)
+    if (detailedReport) return // Already fetched
+
+    if (result.prediction?.disease && result.prediction?.predictions) {
+      setLoadingReport(true)
+      try {
+        const response = await analysisApi.getDetailedAnalysis(
+          result.prediction.disease,
+          result.prediction.confidence || 0,
+          result.prediction.predictions
+        )
+        setDetailedReport(response.detailed_report)
+      } catch (error) {
+        console.error('Error fetching detailed report:', error)
+        setDetailedReport('Unable to generate detailed report at this time. Please try again later.')
+      } finally {
+        setLoadingReport(false)
+      }
+    }
+  }
 
   // Fetch doctors and hospitals for recommendations
   useEffect(() => {
@@ -471,7 +518,7 @@ function AnalysisResults({
           <Button
             onClick={onReset}
             variant="outline"
-            className="mt-4 border-[#1a2352] text-[#1a2352]"
+            className="mt-4 border-border text-foreground"
           >
             Try Again
           </Button>
@@ -497,12 +544,12 @@ function AnalysisResults({
             <h2 className="text-2xl font-bold mb-1">
               {getRiskText(risk)}
             </h2>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {getRiskDescription(risk)}
             </p>
               </div>
 
-          <div className="bg-gray-50 rounded-lg p-6 mb-8">
+          <div className="bg-muted rounded-lg p-6 mb-8">
             <h3 className="text-lg font-medium mb-4">Detected Patterns</h3>
             
             <div className="space-y-4">
@@ -525,20 +572,20 @@ function AnalysisResults({
           </div>
 
           <div className="text-center">
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               Analysis completed on {formatDate(result.createdAt || new Date().toISOString())}
             </p>
             <div className="flex justify-center space-x-4">
               <Button
                 onClick={onReset}
                 variant="outline"
-                className="border-[#1a2352] text-[#1a2352]"
+                className="border-border text-foreground"
               >
                 New Analysis
               </Button>
               <Button
                 className="bg-[#1a2352] hover:bg-[#0f1838] text-white"
-                onClick={() => setIsReportModalOpen(true)}
+                onClick={handleViewDetailedReport}
               >
                 View Detailed Report
               </Button>
@@ -549,10 +596,10 @@ function AnalysisResults({
 
       {/* Recommendations Section */}
       <div className="mt-8 space-y-6">
-        <h2 className="text-2xl font-bold text-[#1a2352] text-center">
+        <h2 className="text-2xl font-bold text-foreground text-center">
           Recommended for You
         </h2>
-        <p className="text-gray-600 text-center max-w-2xl mx-auto">
+        <p className="text-muted-foreground text-center max-w-2xl mx-auto">
           Based on your analysis results, we recommend consulting with these specialists
         </p>
 
@@ -579,7 +626,7 @@ function AnalysisResults({
                         onClick={() => navigate(`/appointments?doctor=${doctor.id}`)}
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
                             <img
                               src={doctor.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor.name)}&background=3b82f6&color=fff&size=100`}
                               alt={doctor.name}
@@ -587,8 +634,8 @@ function AnalysisResults({
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-[#1a2352] truncate">{doctor.name}</h4>
-                            <p className="text-sm text-gray-500 truncate">
+                            <h4 className="font-medium text-foreground truncate">{doctor.name}</h4>
+                            <p className="text-sm text-muted-foreground truncate">
                               {doctor.specialties?.join(', ') || 'General Physician'}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
@@ -607,7 +654,7 @@ function AnalysisResults({
                     </Link>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">No doctors available</p>
+                  <p className="text-muted-foreground text-center py-4">No doctors available</p>
                 )}
               </CardContent>
             </Card>
@@ -627,12 +674,12 @@ function AnalysisResults({
                         key={hospital.id}
                         className="p-4 border rounded-lg hover:border-[#ff7757] transition-colors"
                       >
-                        <h4 className="font-medium text-[#1a2352]">{hospital.name}</h4>
-                        <div className="flex items-start gap-1 mt-1 text-sm text-gray-500">
+                        <h4 className="font-medium text-foreground">{hospital.name}</h4>
+                        <div className="flex items-start gap-1 mt-1 text-sm text-muted-foreground">
                           <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
                           <span className="line-clamp-2">{hospital.address}</span>
                         </div>
-                        <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
+                        <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
                           <Phone className="w-4 h-4" />
                           <span>{hospital.phone}</span>
                         </div>
@@ -656,7 +703,7 @@ function AnalysisResults({
                     </Link>
                   </div>
                 ) : (
-                  <p className="text-gray-500 text-center py-4">No hospitals available</p>
+                  <p className="text-muted-foreground text-center py-4">No hospitals available</p>
                 )}
               </CardContent>
             </Card>
@@ -674,87 +721,101 @@ function AnalysisResults({
         </div>
       </div>
 
-      {/* Detailed Report Modal - Made more compact */}
+      {/* Detailed Report Modal */}
       <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#1a2352]">Analysis Report</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-foreground">
+              {result.prediction?.disease
+                ? `Detailed Analysis: ${result.prediction.disease}`
+                : 'Analysis Report'}
+            </DialogTitle>
             <DialogDescription>
-              Summary of your respiratory analysis
+              {result.prediction?.disease
+                ? `AI-powered detailed medical report • Confidence: ${((result.prediction.confidence || 0) * 100).toFixed(1)}%`
+                : 'Summary of your respiratory analysis'}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="mt-4 space-y-4">
-            {/* Report Header - simplified */}
-            <div className="flex items-center justify-between text-sm">
-              <div>
-                <span className="font-medium">ID:</span> {result.id?.substring(0, 8)}...
+            {/* Prediction Summary */}
+            {result.prediction?.disease && (
+              <div className="bg-muted p-4 rounded-lg">
+                <div className="flex items-center mb-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${riskColor.bg}`}>
+                    <Stethoscope className={`w-5 h-5 ${riskColor.text}`} />
+                  </div>
+                  <div>
+                    <p className="font-medium">{result.prediction.disease}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Confidence: {((result.prediction.confidence || 0) * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+                {result.prediction.predictions && Object.keys(result.prediction.predictions).length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">All Predictions:</p>
+                    {Object.entries(result.prediction.predictions)
+                      .sort(([,a], [,b]) => b - a)
+                      .slice(0, 5)
+                      .map(([name, prob]) => (
+                        <div key={name} className="flex items-center justify-between text-sm">
+                          <span>{name}</span>
+                          <span className="font-medium">{(prob * 100).toFixed(1)}%</span>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
-              <div>
-                <span>{formatDate(result.createdAt || new Date().toISOString(), true)}</span>
+            )}
+
+            {/* AI Detailed Report */}
+            {loadingReport ? (
+              <div className="flex flex-col items-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-foreground mb-3" />
+                <p className="text-sm text-muted-foreground">Generating detailed AI analysis...</p>
               </div>
-            </div>
-            
-            {/* Status & Score - simplified */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center mb-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${riskColor.bg}`}>
-                  <span className={`text-lg font-bold ${riskColor.text}`}>
-                    {result.details.score || 0}
-                  </span>
+            ) : detailedReport ? (
+              <div className="prose prose-sm max-w-none">
+                <div className="whitespace-pre-wrap text-sm text-foreground leading-relaxed">
+                  {detailedReport}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-muted p-4 rounded-lg">
+                  <div className="flex items-center mb-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${riskColor.bg}`}>
+                      <span className={`text-lg font-bold ${riskColor.text}`}>
+                        {result.details?.score || 0}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{getRiskText(risk)}</p>
+                      <p className="text-xs text-muted-foreground">{result.message}</p>
+                    </div>
+                  </div>
                 </div>
                 <div>
-                  <p className="font-medium">{getRiskText(risk)}</p>
-                  <p className="text-xs text-gray-600">{result.message}</p>
+                  <h3 className="text-sm font-semibold mb-2">Key Recommendations</h3>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-foreground">
+                    {getRiskRecommendations(risk).map((recommendation, index) => (
+                      <li key={index}>{recommendation}</li>
+                    ))}
+                  </ul>
                 </div>
               </div>
-
-              <div className="text-sm mb-2">
-                <span className="font-medium">File:</span> {result.filePath?.split('/').pop() || 'Unknown'}
-              </div>
-            </div>
-            
-            {/* Pattern Details - simplified */}
-            <div>
-              <h3 className="text-sm font-semibold mb-2">Detected Patterns</h3>
-              <div className="space-y-3">
-                <PatternBar 
-                  label="Wheezing" 
-                  value={result.details.patterns?.wheezing || 0} 
-                  color="text-yellow-500"
-                />
-                <PatternBar 
-                  label="Coughing" 
-                  value={result.details.patterns?.coughing || 0} 
-                  color="text-orange-500"
-                />
-                <PatternBar 
-                  label="Shortness of Breath" 
-                  value={result.details.patterns?.shortness_of_breath || 0} 
-                  color="text-red-500"
-                />
-              </div>
-                  </div>
-            
-            {/* Top Recommendations - simplified */}
-            <div>
-              <h3 className="text-sm font-semibold mb-2">Key Recommendations</h3>
-              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
-                {getRiskRecommendations(risk).slice(0, 2).map((recommendation, index) => (
-                  <li key={index}>{recommendation}</li>
-                ))}
-              </ul>
-            </div>
-              </div>
+            )}
+          </div>
 
           <DialogFooter className="mt-4">
-                  <Button
+            <Button
               variant="outline"
               onClick={() => setIsReportModalOpen(false)}
-              className="border-[#1a2352] text-[#1a2352]"
-                  >
+              className="border-border text-foreground"
+            >
               Close
-                  </Button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -777,7 +838,7 @@ function PatternBar({
   return (
     <div>
       <div className="flex justify-between mb-1">
-        <span className="text-sm font-medium text-gray-700">{label}</span>
+        <span className="text-sm font-medium text-foreground">{label}</span>
         <span className={`text-sm font-medium ${color}`}>{percentage}%</span>
               </div>
       <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -836,7 +897,7 @@ function formatDate(dateString: string, short: boolean = false): string {
 
 function getRiskColor(risk: string | null | undefined): { bg: string; text: string } {
   if (!risk) {
-    return { bg: "bg-gray-100", text: "text-gray-700" }
+    return { bg: "bg-muted", text: "text-foreground" }
   }
   
   switch (risk.toLowerCase()) {
@@ -847,7 +908,7 @@ function getRiskColor(risk: string | null | undefined): { bg: string; text: stri
     case "high":
       return { bg: "bg-red-100", text: "text-red-700" }
     default:
-      return { bg: "bg-gray-100", text: "text-gray-700" }
+      return { bg: "bg-muted", text: "text-foreground" }
   }
 }
 

@@ -18,14 +18,16 @@ export interface RolePermissions {
 // Helper function to determine role from user data
 export const getUserRole = (user: any | null): UserRole => {
   if (!user) return null
-  
-  if (user.doctor_profile) {
-    return 'doctor'
-  } else if (user.admin_profile) {
-    return 'admin'
-  } else {
-    return 'patient'
-  }
+
+  // Check the role field from backend (primary source)
+  if (user.role === 'admin') return 'admin'
+  if (user.role === 'doctor') return 'doctor'
+  if (user.role === 'user') return 'patient'
+
+  // Fallback: check profile objects
+  if (user.doctor_profile) return 'doctor'
+
+  return 'patient'
 }
 
 // Helper function to get permissions based on role

@@ -187,7 +187,7 @@ export default function PatientDashboard() {
         <div className="flex items-center justify-center h-[50vh]">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-red-600 mb-2">Error</h2>
-            <p className="text-gray-600">{error}</p>
+            <p className="text-muted-foreground">{error}</p>
             <Button className="mt-4" onClick={() => window.location.reload()}>
               Try Again
             </Button>
@@ -203,7 +203,7 @@ export default function PatientDashboard() {
         <div className="flex items-center justify-center h-[50vh]">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-2">Not Logged In</h2>
-            <p className="text-gray-600">Please log in to view your dashboard</p>
+            <p className="text-muted-foreground">Please log in to view your dashboard</p>
             <Button className="mt-4" onClick={() => navigate('/login')}>
               Go to Login
             </Button>
@@ -254,10 +254,10 @@ export default function PatientDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   <span className="font-medium">Email:</span> {user.email || 'Not specified'}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   <span className="font-medium">Phone:</span> {user.phone || 'Not specified'}
                 </p>
               </div>
@@ -271,7 +271,7 @@ export default function PatientDashboard() {
             <CardContent>
               <div className="flex items-center space-x-2">
                 <span className={`h-2 w-2 rounded-full ${user.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-muted-foreground">
                   {user.is_active ? 'Active' : 'Inactive'}
                 </span>
               </div>
@@ -376,11 +376,11 @@ export default function PatientDashboard() {
                       {/* Overview Stats */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="p-4 rounded-lg bg-blue-50">
-                          <p className="text-sm text-gray-600">Total Analyses</p>
+                          <p className="text-sm text-muted-foreground">Total Analyses</p>
                           <p className="text-2xl font-bold text-blue-600">{analyses.length}</p>
                         </div>
                         <div className="p-4 rounded-lg bg-green-50">
-                          <p className="text-sm text-gray-600">Latest Result</p>
+                          <p className="text-sm text-muted-foreground">Latest Result</p>
                           <p className="text-lg font-bold text-green-600 truncate">
                             {analyses[0]?.message || 'Completed'}
                           </p>
@@ -407,7 +407,7 @@ export default function PatientDashboard() {
                         if (pieData.length === 0) return null;
                         return (
                           <div>
-                            <h4 className="text-sm font-medium text-gray-500 mb-2">Disease Distribution</h4>
+                            <h4 className="text-sm font-medium text-muted-foreground mb-2">Disease Distribution</h4>
                             <ResponsiveContainer width="100%" height={250}>
                               <PieChart>
                                 <Pie
@@ -432,7 +432,7 @@ export default function PatientDashboard() {
 
                       {/* Recent Analyses List */}
                       <div className="space-y-3">
-                        <h4 className="text-sm font-medium text-gray-500">Recent Results</h4>
+                        <h4 className="text-sm font-medium text-muted-foreground">Recent Results</h4>
                         {analyses.slice(0, 4).map((analysis, index) => (
                           <div
                             key={analysis.id || index}
@@ -444,7 +444,7 @@ export default function PatientDashboard() {
                               </div>
                               <div>
                                 <p className="text-sm font-medium">{analysis.message || 'Respiratory Analysis'}</p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-muted-foreground">
                                   {new Date(analysis.created_at).toLocaleDateString()} &middot; {analysis.analysis_type === 'file' ? 'File Upload' : 'Audio Recording'}
                                 </p>
                               </div>
@@ -463,8 +463,8 @@ export default function PatientDashboard() {
                   ) : (
                     <div className="text-center py-8">
                       <Wind className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500 mb-1">No analyses yet</p>
-                      <p className="text-sm text-gray-400 mb-4">Upload an audio sample to get your first respiratory analysis</p>
+                      <p className="text-muted-foreground mb-1">No analyses yet</p>
+                      <p className="text-sm text-muted-foreground/70 mb-4">Upload an audio sample to get your first respiratory analysis</p>
                       <Button onClick={() => navigate('/analysis')}>
                         <Stethoscope className="h-4 w-4 mr-2" />
                         Start Analysis
@@ -499,7 +499,7 @@ export default function PatientDashboard() {
                         >
                           <div>
                             <h3 className="font-medium">{appointment.doctor}</h3>
-                            <p className="text-sm text-gray-500">{appointment.type}</p>
+                            <p className="text-sm text-muted-foreground">{appointment.type}</p>
                             <div className="flex gap-2 mt-1">
                               {appointment.symptoms.map((symptom, i) => (
                                 <span key={i} className="text-xs bg-gray-100 px-2 py-1 rounded-full">
@@ -511,7 +511,7 @@ export default function PatientDashboard() {
                           <div className="text-right">
                             <p className="font-medium">{appointment.date}</p>
                             <p className="text-sm">{appointment.time}</p>
-                            <p className="text-sm text-gray-500">{appointment.duration}</p>
+                            <p className="text-sm text-muted-foreground">{appointment.duration}</p>
                             <span className={`text-xs px-2 py-1 rounded-full ${
                               appointment.status.toLowerCase() === "confirmed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
                             }`}>
@@ -522,7 +522,7 @@ export default function PatientDashboard() {
                       ))
                     ) : (
                       <div className="text-center py-6">
-                        <p className="text-gray-500">No upcoming appointments</p>
+                        <p className="text-muted-foreground">No upcoming appointments</p>
                         <Button className="mt-4" onClick={handleScheduleAppointment}>
                           Schedule Now
                         </Button>
@@ -549,12 +549,12 @@ export default function PatientDashboard() {
                         >
                           <div>
                             <h3 className="font-medium">{record.title}</h3>
-                            <p className="text-sm text-gray-500">{record.date}</p>
-                            <p className="text-xs text-gray-500">{record.type}</p>
+                            <p className="text-sm text-muted-foreground">{record.date}</p>
+                            <p className="text-xs text-muted-foreground">{record.type}</p>
                           </div>
                           <div className="text-right">
                             <span className="text-sm text-green-600">{record.status}</span>
-                            <p className="text-xs text-gray-500">{record.doctor}</p>
+                            <p className="text-xs text-muted-foreground">{record.doctor}</p>
                             <Button 
                               variant="outline" 
                               size="sm" 
@@ -568,7 +568,7 @@ export default function PatientDashboard() {
                       ))
                     ) : (
                       <div className="text-center py-6">
-                        <p className="text-gray-500">No health records available</p>
+                        <p className="text-muted-foreground">No health records available</p>
                       </div>
                     )}
                   </div>
@@ -600,10 +600,10 @@ export default function PatientDashboard() {
                                     ? 'Appointment Confirmed'
                                     : 'Appointment Booked'}
                               </h3>
-                              <p className="text-sm text-gray-500">Doctor ID: {appointment.doctor_id}</p>
+                              <p className="text-sm text-muted-foreground">Doctor ID: {appointment.doctor_id}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 {new Date(appointment.created_at).toLocaleDateString()} at {appointment.time}
                               </p>
                             </div>
@@ -611,7 +611,7 @@ export default function PatientDashboard() {
                         ))
                     ) : (
                       <div className="text-center py-6">
-                        <p className="text-gray-500">No recent activities</p>
+                        <p className="text-muted-foreground">No recent activities</p>
                       </div>
                     )}
                   </div>
@@ -656,7 +656,7 @@ export default function PatientDashboard() {
                     className="space-y-4"
                   >
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-1 block">Subject</label>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Subject</label>
                       <Input
                         placeholder="Enter feedback subject"
                         value={feedbackSubject}
@@ -664,7 +664,7 @@ export default function PatientDashboard() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-1 block">Message</label>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Message</label>
                       <Textarea
                         placeholder="Tell us about your experience..."
                         value={feedbackMessage}
@@ -673,7 +673,7 @@ export default function PatientDashboard() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-1 block">Rating</label>
+                      <label className="text-sm font-medium text-foreground mb-1 block">Rating</label>
                       <div className="flex gap-1">
                         {[1, 2, 3, 4, 5].map((star) => (
                           <button
@@ -716,11 +716,11 @@ export default function PatientDashboard() {
                         >
                           <div className="flex items-center justify-between mb-1">
                             <h4 className="text-sm font-medium">{fb.subject}</h4>
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-muted-foreground/70">
                               {new Date(fb.created_at).toLocaleDateString()}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-1">{fb.message}</p>
+                          <p className="text-sm text-muted-foreground mb-1">{fb.message}</p>
                           {fb.rating && (
                             <div className="flex gap-0.5">
                               {[1, 2, 3, 4, 5].map((s) => (
@@ -740,8 +740,8 @@ export default function PatientDashboard() {
                     </div>
                   ) : (
                     <div className="text-center py-6">
-                      <p className="text-gray-500">No feedback submitted yet</p>
-                      <p className="text-sm text-gray-400 mt-1">Use the form to share your experience</p>
+                      <p className="text-muted-foreground">No feedback submitted yet</p>
+                      <p className="text-sm text-muted-foreground/70 mt-1">Use the form to share your experience</p>
                     </div>
                   )}
                 </CardContent>
@@ -751,13 +751,13 @@ export default function PatientDashboard() {
         )}
 
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          <div className="p-5 border rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow">
+          <div className="p-5 border rounded-lg shadow-sm bg-card hover:shadow-md transition-shadow">
             <div className="flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 mb-4 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
                 <Calendar className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-medium">Appointments</h3>
-              <p className="text-sm text-gray-500 mb-4">Manage your upcoming appointments</p>
+              <p className="text-sm text-muted-foreground mb-4">Manage your upcoming appointments</p>
               <Link
                 to="/appointments/manage"
                 className="text-blue-500 text-sm font-medium hover:underline"
@@ -767,13 +767,13 @@ export default function PatientDashboard() {
             </div>
           </div>
 
-          <div className="p-5 border rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow">
+          <div className="p-5 border rounded-lg shadow-sm bg-card hover:shadow-md transition-shadow">
             <div className="flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 mb-4 rounded-full bg-green-50 flex items-center justify-center text-green-500">
                 <Clipboard className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-medium">Health Records</h3>
-              <p className="text-sm text-gray-500 mb-4">Access your respiratory analyses</p>
+              <p className="text-sm text-muted-foreground mb-4">Access your respiratory analyses</p>
               <Link
                 to="/analysis"
                 className="text-green-500 text-sm font-medium hover:underline"

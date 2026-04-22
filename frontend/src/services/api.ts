@@ -217,6 +217,10 @@ export interface Analysis {
   created_at?: string;
 }
 
+export interface DetailedAnalysisResponse {
+  detailed_report: string;
+}
+
 export const analysisApi = {
   // Get all analyses for current user
   getAll: async (): Promise<Analysis[]> => {
@@ -233,6 +237,16 @@ export const analysisApi = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+    });
+    return response.data;
+  },
+
+  // Get detailed AI analysis report for prediction results
+  getDetailedAnalysis: async (disease: string, confidence: number, predictions: Record<string, number>): Promise<DetailedAnalysisResponse> => {
+    const response = await apiClient.post<DetailedAnalysisResponse>('/api/analysis/detailed', {
+      disease,
+      confidence,
+      predictions,
     });
     return response.data;
   },

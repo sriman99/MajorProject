@@ -171,7 +171,7 @@ export default function SignUp() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted relative overflow-hidden">
       {/* Decorative elements */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.img
@@ -209,8 +209,8 @@ export default function SignUp() {
                   className="w-30 h-17 mx-auto mb-4"
                   whileHover={{ scale: 1.05 }}
                 />
-                <h1 className="text-3xl font-bold text-[#1a2352] mb-2">Join NeumoAI</h1>
-                <p className="text-gray-600 text-lg">How would you like to use NeumoAI?</p>
+                <h1 className="text-3xl font-bold text-foreground mb-2">Join NeumoAI</h1>
+                <p className="text-muted-foreground text-lg">How would you like to use NeumoAI?</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
@@ -218,7 +218,7 @@ export default function SignUp() {
                   <motion.button
                     key={card.role}
                     onClick={() => setSelectedRole(card.role)}
-                    className={`relative bg-white rounded-2xl shadow-md border-2 border-transparent p-8 text-left transition-all duration-300 cursor-pointer ${card.bgHover} hover:shadow-lg`}
+                    className={`relative bg-card rounded-2xl shadow-md border-2 border-transparent p-8 text-left transition-all duration-300 cursor-pointer ${card.bgHover} hover:shadow-lg`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     whileHover={{ y: -4 }}
@@ -227,13 +227,13 @@ export default function SignUp() {
                     <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-5`}>
                       <card.icon className="w-8 h-8 text-white" />
                     </div>
-                    <h2 className="text-2xl font-bold text-[#1a2352] mb-2">
+                    <h2 className="text-2xl font-bold text-foreground mb-2">
                       I'm a {card.title}
                     </h2>
-                    <p className="text-gray-500 mb-5 text-sm leading-relaxed">{card.description}</p>
+                    <p className="text-muted-foreground mb-5 text-sm leading-relaxed">{card.description}</p>
                     <ul className="space-y-2">
                       {card.features.map((feature) => (
-                        <li key={feature} className="flex items-center text-sm text-gray-600">
+                        <li key={feature} className="flex items-center text-sm text-muted-foreground">
                           <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                           {feature}
                         </li>
@@ -244,13 +244,13 @@ export default function SignUp() {
               </div>
 
               <motion.p
-                className="text-center text-gray-600 mt-8"
+                className="text-center text-muted-foreground mt-8"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
               >
                 Already have an account?{" "}
-                <Link to="/login" className="text-[#ff7757] hover:text-[#1a2352] transition-colors font-medium">
+                <Link to="/login" className="text-[#ff7757] hover:text-foreground transition-colors font-medium">
                   Sign in
                 </Link>
               </motion.p>
@@ -261,7 +261,7 @@ export default function SignUp() {
           {selectedRole && (
             <motion.div
               key="signup-form"
-              className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-8"
+              className="max-w-xl mx-auto bg-card rounded-2xl shadow-lg p-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -270,7 +270,7 @@ export default function SignUp() {
               <div className="mb-6">
                 <button
                   onClick={() => { setSelectedRole(""); setErrors({}) }}
-                  className="flex items-center text-gray-500 hover:text-[#1a2352] transition-colors text-sm cursor-pointer"
+                  className="flex items-center text-muted-foreground hover:text-foreground transition-colors text-sm cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4 mr-1" />
                   Change role
@@ -284,10 +284,10 @@ export default function SignUp() {
                     : <User className="w-7 h-7 text-white" />
                   }
                 </div>
-                <h1 className="text-2xl font-bold text-[#1a2352] mb-1">
+                <h1 className="text-2xl font-bold text-foreground mb-1">
                   Sign up as {selectedRole === "doctor" ? "Doctor" : "Patient"}
                 </h1>
-                <p className="text-gray-500 text-sm">Fill in your details to get started</p>
+                <p className="text-muted-foreground text-sm">Fill in your details to get started</p>
               </div>
 
               <motion.form
@@ -311,7 +311,7 @@ export default function SignUp() {
                     transition={{ duration: 0.4, delay: field.delay }}
                   >
                     <Label htmlFor={field.id}>{field.label}</Label>
-                    {field.hint && <p className="text-xs text-gray-500">{field.hint}</p>}
+                    {field.hint && <p className="text-xs text-muted-foreground">{field.hint}</p>}
                     <div className="relative">
                       <Input
                         id={field.id}
@@ -395,13 +395,13 @@ export default function SignUp() {
                 </motion.div>
 
                 <motion.p
-                  className="text-center text-gray-600 text-sm"
+                  className="text-center text-muted-foreground text-sm"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.45 }}
                 >
                   Already have an account?{" "}
-                  <Link to="/login" className="text-[#ff7757] hover:text-[#1a2352] transition-colors font-medium">
+                  <Link to="/login" className="text-[#ff7757] hover:text-foreground transition-colors font-medium">
                     Sign in
                   </Link>
                 </motion.p>

@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Send, Bot, X, MessageSquare, Heart, Shield, Stethoscope, Thermometer, Brain } from "lucide-react"
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai"
 import { motion, AnimatePresence } from "framer-motion"
+import apiClient from "@/services/api"
 
 interface Message {
   role: "user" | "assistant"
@@ -100,84 +100,20 @@ export function ChatBot() {
         }
       }
 
-      // Use Gemini API if available
-      if (import.meta.env.VITE_GEMINI_API_KEY) {
-        try {
-          console.log("Initializing Gemini API...")
-          const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY)
-
-          // Configure safety settings
-          const safetySettings = [
-            {
-              category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-              threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            },
-            {
-              category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-              threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            },
-            {
-              category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-              threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            },
-            {
-              category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-              threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            },
-          ]
-
-          console.log("Getting model...")
-          const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash",
-            safetySettings,
-          })
-
-          const prompt = `
-            You are a professional medical assistant specializing in respiratory health.
-            Please provide accurate, helpful, and professional advice about: ${userMessage}
-
-            Guidelines for your response:
-            1. Focus only on respiratory health-related topics
-            2. If the question is not health-related, politely redirect to health topics
-            3. Keep responses concise and clear
-            4. Include relevant precautions and prevention tips
-            5. Always recommend consulting a doctor for serious concerns
-            6. Use simple language that's easy to understand
-            7. Include relevant statistics or facts when appropriate
-            8. Format your response with clear sections and bullet points when appropriate
-          `
-
-          console.log("Generating content...")
-          const result = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-          })
-          console.log("Response received:", result)
-
-          const response = await result.response
-          console.log("Response text:", response.text())
-
-          const text = response.text()
-
-          if (!text) {
-            throw new Error("No response received from the API")
-          }
-
-          setMessages(prev => [...prev, { role: "assistant", content: text }])
-        } catch (apiError: any) {
-          console.error("Gemini API Error:", apiError)
-          // Check if it's a rate limit error (429)
-          if (apiError?.message?.includes('429') || apiError?.message?.includes('quota') || apiError?.message?.includes('RATE_LIMIT')) {
-            console.log("Rate limit hit, using smart fallback response")
-            // Use intelligent fallback based on user message
-            const fallbackResponse = getSmartFallbackResponse(userMessage)
-            setMessages(prev => [...prev, { role: "assistant", content: fallbackResponse }])
-          } else {
-            throw apiError
-          }
+      // Use backend AI chat endpoint (Gemini proxied through backend)
+      try {
+        const token = localStorage.getItem('access_token')
+        if (token) {
+          const response = await apiClient.post<{ response: string }>('/api/chat', { message: userMessage })
+          setMessages(prev => [...prev, { role: "assistant", content: response.data.response }])
+        } else {
+          // Not logged in - use fallback
+          const fallbackResponse = getSmartFallbackResponse(userMessage)
+          setMessages(prev => [...prev, { role: "assistant", content: fallbackResponse }])
         }
-      } else {
-        console.log("No API key found, using mock response")
-        // Fallback to mock response if no API key
+      } catch (apiError) {
+        console.error("Chat API Error:", apiError)
+        // Fallback to local responses
         const fallbackResponse = getSmartFallbackResponse(userMessage)
         setMessages(prev => [...prev, { role: "assistant", content: fallbackResponse }])
       }
@@ -250,7 +186,7 @@ export function ChatBot() {
               stiffness: 300,
               damping: 25
             }}
-            className={`fixed ${isMinimized ? 'bottom-20 right-4 sm:bottom-24 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-32' : 'bottom-20 right-4 sm:bottom-24 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[calc(100vh-6rem)] sm:h-[600px]'} bg-white rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden`}
+            className={`fixed ${isMinimized ? 'bottom-20 right-4 sm:bottom-24 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-32' : 'bottom-20 right-4 sm:bottom-24 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[calc(100vh-6rem)] sm:h-[600px]'} bg-card rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden`}
           >
             <div className="p-4 border-b flex justify-between items-center bg-gradient-to-r from-[#ff7757] to-[#ff5757] text-white rounded-t-xl">
               <div className="flex items-center gap-2">
@@ -262,7 +198,7 @@ export function ChatBot() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsMinimized(!isMinimized)}
-                  className="hover:bg-white/10 text-white"
+                  className="hover:bg-card/10 text-white"
                 >
                   <MessageSquare className="w-4 h-4" />
                 </Button>
@@ -270,7 +206,7 @@ export function ChatBot() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsOpen(false)}
-                  className="hover:bg-white/10 text-white"
+                  className="hover:bg-card/10 text-white"
                 >
                   <X className="w-4 h-4" />
                 </Button>

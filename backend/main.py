@@ -2303,6 +2303,111 @@ async def admin_delete_doctor(
     return {"message": f"Doctor {doctor['name']} has been removed successfully"}
 
 # =============================================
+# AI CHAT & ANALYSIS ENDPOINTS (Gemini Proxy)
+# =============================================
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+
+async def call_gemini(prompt: str) -> str:
+    """Call Gemini API and return the response text"""
+    if not GEMINI_API_KEY:
+        return "AI service is not configured. Please contact the administrator."
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "safetySettings": [
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                    ]
+                }
+            )
+            if response.status_code == 429:
+                return "The AI service is currently rate-limited. Please try again in a minute."
+            if response.status_code != 200:
+                print(f"Gemini API returned status {response.status_code}")
+                return "I'm sorry, the AI service is temporarily unavailable. Please try again later."
+            data = response.json()
+            return data["candidates"][0]["content"]["parts"][0]["text"]
+    except Exception as e:
+        print(f"Gemini API error: {e}")
+        return "I'm sorry, I couldn't process your request right now. Please try again later."
+
+class ChatRequest(BaseModel):
+    message: str
+
+class ChatResponse(BaseModel):
+    response: str
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat_with_ai(
+    chat: ChatRequest,
+    current_user = Depends(get_current_active_user)
+):
+    prompt = f"""You are a professional medical assistant specializing in respiratory health.
+Please provide accurate, helpful, and professional advice about: {chat.message}
+
+Guidelines:
+- Focus on respiratory health topics
+- Provide evidence-based information
+- Always recommend consulting a doctor for serious symptoms
+- Be empathetic and supportive
+- Use bullet points and clear formatting
+- Keep responses concise but informative"""
+
+    response_text = await call_gemini(prompt)
+    return ChatResponse(response=response_text)
+
+class DetailedAnalysisRequest(BaseModel):
+    disease: str
+    confidence: float
+    predictions: Dict[str, float]
+
+class DetailedAnalysisResponse(BaseModel):
+    detailed_report: str
+
+@app.post("/api/analysis/detailed", response_model=DetailedAnalysisResponse)
+async def get_detailed_analysis(
+    analysis: DetailedAnalysisRequest,
+    current_user = Depends(get_current_active_user)
+):
+    # Build prediction summary
+    sorted_predictions = sorted(analysis.predictions.items(), key=lambda x: x[1], reverse=True)
+    prediction_text = "\n".join([f"- {name}: {prob*100:.1f}%" for name, prob in sorted_predictions[:5]])
+
+    prompt = f"""You are a pulmonologist providing a detailed analysis report for a patient.
+
+The AI model has analyzed a lung/breathing audio sample and detected:
+- **Primary Diagnosis:** {analysis.disease} (Confidence: {analysis.confidence*100:.1f}%)
+- **All Predictions:**
+{prediction_text}
+
+Please provide a detailed medical report including:
+
+1. **Disease Overview**: What is {analysis.disease}? Brief medical description.
+2. **Symptoms to Watch**: Common symptoms the patient should monitor.
+3. **Possible Causes**: What typically causes this condition.
+4. **Recommended Actions**: What the patient should do next (tests, doctor visits, lifestyle changes).
+5. **Treatment Options**: Common treatments available.
+6. **Prevention Tips**: How to prevent worsening or recurrence.
+7. **When to Seek Emergency Care**: Red flag symptoms requiring immediate attention.
+
+Important:
+- Be professional but easy to understand
+- Always emphasize this is AI-assisted and they should consult a real doctor
+- Use clear headings and bullet points
+- Keep it informative but not alarming"""
+
+    report = await call_gemini(prompt)
+    return DetailedAnalysisResponse(detailed_report=report)
+
+# =============================================
 # ROOT ENDPOINT
 # =============================================
 
