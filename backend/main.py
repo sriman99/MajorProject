@@ -71,11 +71,16 @@ app = FastAPI(title="Healthcare API", description="API for healthcare applicatio
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# CORS middleware - Restricted to frontend origin
+# CORS middleware
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+ALLOWED_ORIGINS = [origin.strip() for origin in FRONTEND_URL.split(",") if origin.strip()]
+if "*" in ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS = ["*"]
+else:
+    ALLOWED_ORIGINS.append("http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL, "http://localhost:5173"],  # Only allow frontend
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
