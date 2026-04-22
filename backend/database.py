@@ -3,6 +3,7 @@ Async MongoDB Database Connection Module
 Uses Motor for async operations
 """
 import os
+import certifi
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 
@@ -20,7 +21,10 @@ database = Database()
 
 async def connect_to_mongo():
     """Connect to MongoDB on startup"""
-    database.client = AsyncIOMotorClient(MONGODB_URL, maxPoolSize=50, minPoolSize=10)
+    if "mongodb+srv" in MONGODB_URL or "mongodb.net" in MONGODB_URL:
+        database.client = AsyncIOMotorClient(MONGODB_URL, maxPoolSize=50, minPoolSize=10, tlsCAFile=certifi.where())
+    else:
+        database.client = AsyncIOMotorClient(MONGODB_URL, maxPoolSize=50, minPoolSize=10)
     database.db = database.client.healthcare_db
     print("Connected to MongoDB")
 
