@@ -89,7 +89,8 @@ export default function RespiratoryAnalysis() {
       })
       navigate('/login')
     }
-  }, [isLoggedIn, navigate, toast])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, navigate])
   
   // If not logged in, don't render the component
   if (!isLoggedIn) {

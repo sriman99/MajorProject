@@ -1,4 +1,4 @@
-import { Calendar, MessageCircle, FileText, Heart, Thermometer, Stethoscope, Wind, ActivitySquare, Droplets, Brain, Plus, CreditCard, Clipboard, Activity } from "lucide-react"
+import { Calendar, MessageCircle, FileText, Stethoscope, Wind, Plus, CreditCard, Clipboard, Activity } from "lucide-react"
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,137 +10,9 @@ import { toast } from "sonner"
 import { appointmentsApi, analysisApi } from "@/services/api"
 import type { Appointment as ApiAppointment, Analysis as ApiAnalysis } from "@/services/api"
 
-interface HealthMetric {
-  title: string;
-  value: string;
-  unit: string;
-  trend: string;
-  icon: any;
-  color: string;
-  bgColor: string;
-  description: string;
-  range?: {
-    min: number;
-    max: number;
-  };
-}
+// Suppress unused import warnings
+void [Calendar, Stethoscope, FileText, MessageCircle]
 
-// Mock data - kept for reference, actual data is fetched from API
-void [Calendar, Stethoscope, FileText, MessageCircle] // suppress unused warnings
-
-const healthMetrics = [
-  { 
-    title: "Heart Rate", 
-    value: "72", 
-    unit: "bpm", 
-    trend: "normal", 
-    icon: Heart,
-    color: "text-red-500",
-    bgColor: "bg-red-50",
-    description: "Resting heart rate",
-    range: { min: 60, max: 100 }
-  },
-  { 
-    title: "Temperature", 
-    value: "98.6", 
-    unit: "°F", 
-    trend: "normal", 
-    icon: Thermometer,
-    color: "text-orange-500",
-    bgColor: "bg-orange-50",
-    description: "Body temperature",
-    range: { min: 97, max: 99 }
-  },
-  { 
-    title: "Activity Level", 
-    value: "85", 
-    unit: "%", 
-    trend: "high", 
-    icon: Activity,
-    color: "text-blue-500",
-    bgColor: "bg-blue-50",
-    description: "Daily activity goal",
-    range: { min: 0, max: 100 }
-  },
-  { 
-    title: "Respiratory Rate", 
-    value: "16", 
-    unit: "breaths/min", 
-    trend: "normal", 
-    icon: Wind,
-    color: "text-green-500",
-    bgColor: "bg-green-50",
-    description: "Breathing rate",
-    range: { min: 12, max: 20 }
-  },
-  { 
-    title: "Blood Pressure", 
-    value: "120/80", 
-    unit: "mmHg", 
-    trend: "normal", 
-    icon: ActivitySquare,
-    color: "text-purple-500",
-    bgColor: "bg-purple-50",
-    description: "Systolic/Diastolic",
-    range: { min: 90, max: 140 }
-  },
-  { 
-    title: "Oxygen Level", 
-    value: "98", 
-    unit: "%", 
-    trend: "normal", 
-    icon: Droplets,
-    color: "text-cyan-500",
-    bgColor: "bg-cyan-50",
-    description: "Blood oxygen",
-    range: { min: 95, max: 100 }
-  },
-  { 
-    title: "Mental State", 
-    value: "Good", 
-    unit: "", 
-    trend: "stable", 
-    icon: Brain,
-    color: "text-indigo-500",
-    bgColor: "bg-indigo-50",
-    description: "Mental wellness",
-    range: { min: 0, max: 100 }
-  },
-]
-
-// Mock data used as fallback when API fails
-const mockAppointments = [
-  {
-    id: "mock-1",
-    doctor_id: "doc-1",
-    patient_id: "patient-1",
-    date: new Date().toISOString().split('T')[0],
-    time: "10:00 AM",
-    reason: "Video Consultation",
-    status: "confirmed",
-    created_at: new Date().toISOString()
-  },
-  {
-    id: "mock-2",
-    doctor_id: "doc-2",
-    patient_id: "patient-1",
-    date: new Date().toISOString().split('T')[0],
-    time: "2:30 PM",
-    reason: "In-Person Checkup",
-    status: "pending",
-    created_at: new Date().toISOString()
-  },
-]
-
-const mockAnalyses = [
-  {
-    id: "analysis-1",
-    user_id: "patient-1",
-    disease_type: "Respiratory Analysis",
-    confidence: 0.85,
-    timestamp: new Date().toISOString()
-  },
-]
 
 // Add interfaces for API data
 interface Appointment {
@@ -179,7 +51,7 @@ export default function PatientDashboard() {
     upcomingAppointments: 0,
     completedConsultations: 0,
     healthRecords: 0,
-    messages: 5 // Mock data for messages
+    messages: 0
   })
   const [loadingData, setLoadingData] = useState(true)
   const [dataError, setDataError] = useState<string | null>(null)
@@ -216,21 +88,20 @@ export default function PatientDashboard() {
           upcomingAppointments,
           completedConsultations,
           healthRecords: analysesData.length,
-          messages: 5 // TODO: Implement real messages count
+          messages: 0
         });
 
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
-        // Use mock data as fallback
-        setAppointments(mockAppointments as any);
-        setAnalyses(mockAnalyses as any);
+        setAppointments([]);
+        setAnalyses([]);
         setDashboardStats({
-          upcomingAppointments: mockAppointments.filter(a => a.status !== 'completed').length,
+          upcomingAppointments: 0,
           completedConsultations: 0,
-          healthRecords: mockAnalyses.length,
-          messages: 5
+          healthRecords: 0,
+          messages: 0
         });
-        toast.error('Using cached data - API unavailable');
+        toast.error('Could not load dashboard data. Please try again later.');
       } finally {
         setLoadingData(false);
       }
@@ -249,31 +120,6 @@ export default function PatientDashboard() {
     setSelectedRecord(record)
     setIsDialogOpen(true)
   }
-
-  const calculateProgress = (metric: HealthMetric) => {
-    if (!metric.range) return 0;
-    
-    // Handle special cases
-    if (metric.title === "Blood Pressure") {
-      const [systolic, _diastolic] = metric.value.split('/').map(Number);
-      void _diastolic; // Reserved for future use
-      const normalRange = 120; // Normal systolic pressure
-      return Math.min(100, Math.max(0, (systolic / normalRange) * 100));
-    }
-    
-    if (metric.title === "Mental State") {
-      // Convert qualitative state to percentage
-      const states: Record<string, number> = { "Good": 80, "Fair": 60, "Poor": 40 };
-      return states[metric.value] || 50;
-    }
-
-    // For numerical values
-    const value = parseFloat(metric.value);
-    if (isNaN(value)) return 0;
-    
-    const { min, max } = metric.range;
-    return Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
-  };
 
   // Convert API appointments to the format used in the UI
   const formatAppointments = () => {
@@ -531,71 +377,79 @@ export default function PatientDashboard() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              {/* Enhanced Health Metrics */}
+              {/* Analysis Summary */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Health Metrics</CardTitle>
+                  <CardTitle className="flex justify-between">
+                    <span>Respiratory Analysis Summary</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => navigate('/analysis')}
+                    >
+                      <Wind className="h-4 w-4 mr-2" />
+                      New Analysis
+                    </Button>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    {healthMetrics.map((metric) => {
-                      const Icon = metric.icon
-                      const progress = calculateProgress(metric);
+                  {analyses.length > 0 ? (
+                    <div className="space-y-4">
+                      {/* Overview Stats */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-4 rounded-lg bg-blue-50">
+                          <p className="text-sm text-gray-600">Total Analyses</p>
+                          <p className="text-2xl font-bold text-blue-600">{analyses.length}</p>
+                        </div>
+                        <div className="p-4 rounded-lg bg-green-50">
+                          <p className="text-sm text-gray-600">Latest Result</p>
+                          <p className="text-lg font-bold text-green-600 truncate">
+                            {analyses[0]?.message || 'Completed'}
+                          </p>
+                        </div>
+                      </div>
 
-                      return (
-                        <div 
-                          key={metric.title}
-                          className={`p-4 rounded-lg ${metric.bgColor} transition-all hover:shadow-md`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
+                      {/* Recent Analyses List */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-gray-500">Recent Results</h4>
+                        {analyses.slice(0, 4).map((analysis, index) => (
+                          <div
+                            key={analysis.id || index}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:shadow-sm transition-shadow"
+                          >
                             <div className="flex items-center space-x-3">
-                              <div className={`p-2 rounded-full ${metric.bgColor}`}>
-                                <Icon className={`h-5 w-5 ${metric.color}`} />
+                              <div className="p-2 rounded-full bg-indigo-50">
+                                <Stethoscope className="h-4 w-4 text-indigo-500" />
                               </div>
                               <div>
-                                <h3 className="font-medium">{metric.title}</h3>
-                                <p className="text-xs text-gray-500">{metric.description}</p>
+                                <p className="text-sm font-medium">{analysis.message || 'Respiratory Analysis'}</p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(analysis.created_at).toLocaleDateString()} &middot; {analysis.analysis_type === 'file' ? 'File Upload' : 'Audio Recording'}
+                                </p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className={`text-xl font-bold ${metric.color}`}>
-                                {metric.value}
-                                <span className="text-xs ml-1">{metric.unit}</span>
-                              </p>
-                            </div>
-                          </div>
-                          {/* {metric.title !== "Mental State" && (
-                            <div className="mt-2">
-                              <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                <span>{metric.range?.min}</span>
-                                <span>{metric.range?.max}</span>
-                              </div>
-                              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full ${metric.color.replace('text-', 'bg-')} transition-all duration-500`}
-                                  style={{ width: `${progress}%` }}
-                                />
-                              </div>
-                            </div>
-                          )} */}
-                          <div className="mt-2 flex items-center justify-between">
                             <span className={`text-xs px-2 py-1 rounded-full ${
-                              metric.trend === "normal" 
-                                ? "bg-green-100 text-green-800" 
-                                : metric.trend === "high" 
-                                  ? "bg-blue-100 text-blue-800" 
-                                  : "bg-yellow-100 text-yellow-800"
+                              analysis.status === 'completed'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
                             }`}>
-                              {metric.trend}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              Last updated: 2 mins ago
+                              {analysis.status || 'Completed'}
                             </span>
                           </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Wind className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500 mb-1">No analyses yet</p>
+                      <p className="text-sm text-gray-400 mb-4">Upload an audio sample to get your first respiratory analysis</p>
+                      <Button onClick={() => navigate('/analysis')}>
+                        <Stethoscope className="h-4 w-4 mr-2" />
+                        Start Analysis
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
