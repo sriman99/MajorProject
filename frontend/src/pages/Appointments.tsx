@@ -202,8 +202,8 @@ export default function Appointments() {
         </div>
 
         <div className="flex gap-8">
-          {/* Filters Section */}
-          <div className="w-72 flex-shrink-0">
+          {/* Filters Section - hidden on mobile */}
+          <div className="hidden lg:block w-72 flex-shrink-0">
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <h2 className="text-xl font-bold text-[#1a2352] mb-6">Filters</h2>
               

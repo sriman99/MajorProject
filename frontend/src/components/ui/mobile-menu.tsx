@@ -4,7 +4,7 @@ import { Menu } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { UserCircle, LogOut, Stethoscope } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner"
 
 export function MobileMenu({ isDoctor = false }) {
   const navigate = useNavigate()

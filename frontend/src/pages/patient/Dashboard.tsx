@@ -750,7 +750,7 @@ export default function PatientDashboard() {
           </>
         )}
 
-        <section className="grid grid-cols-2 gap-4 mb-8">
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
           <div className="p-5 border rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow">
             <div className="flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 mb-4 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
@@ -759,23 +759,23 @@ export default function PatientDashboard() {
               <h3 className="text-lg font-medium">Appointments</h3>
               <p className="text-sm text-gray-500 mb-4">Manage your upcoming appointments</p>
               <Link
-                to="/patient/appointments"
+                to="/appointments/manage"
                 className="text-blue-500 text-sm font-medium hover:underline"
               >
                 View All
               </Link>
             </div>
           </div>
-          
+
           <div className="p-5 border rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow">
             <div className="flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 mb-4 rounded-full bg-green-50 flex items-center justify-center text-green-500">
                 <Clipboard className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-medium">Health Records</h3>
-              <p className="text-sm text-gray-500 mb-4">Access your medical history</p>
+              <p className="text-sm text-gray-500 mb-4">Access your respiratory analyses</p>
               <Link
-                to="/patient/health-records"
+                to="/analysis"
                 className="text-green-500 text-sm font-medium hover:underline"
               >
                 View Records

@@ -1,8 +1,6 @@
 import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom'
-import { Toaster as HotToaster } from 'react-hot-toast'
-import { Toaster as SonnerToaster } from 'sonner'
-import { ToastProvider, Toaster } from './components/ui/use-toast'
+import { Toaster } from 'sonner'
 import { Home } from './pages/Home'
 import { DoctorHome } from './pages/DoctorHome'
 import Login from './pages/Login'
@@ -123,8 +121,9 @@ const isDoctorRestrictedRoute = (pathname: string): boolean => {
 // Layout component that conditionally renders Navigation and Footer
 function AppLayout() {
   const location = useLocation();
-  const isDashboardRoute = location.pathname.includes('/dashboard') || 
-                           location.pathname.includes('/appointments/manage');
+  const isDashboardRoute = location.pathname.includes('/dashboard') ||
+                           location.pathname.includes('/appointments/manage') ||
+                           location.pathname === '/settings';
   const { user, isLoggedIn } = useAuth();
   const { data: userRoleData } = useUserRole();
   
@@ -225,14 +224,12 @@ function App() {
   }, [user, fetchUser]);
   
   return (
-    <ToastProvider>
-      <HotToaster position="top-right" />
-      <SonnerToaster position="top-right" richColors closeButton />
-      <Toaster />
+    <>
+      <Toaster position="top-right" richColors closeButton />
       <Router>
         <AppLayout />
       </Router>
-    </ToastProvider>
+    </>
   )
 }
 

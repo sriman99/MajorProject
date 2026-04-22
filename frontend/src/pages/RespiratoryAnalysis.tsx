@@ -7,7 +7,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "../components/ui/tabs"
-import { useToast } from "../components/ui/use-toast"
+import { toast } from "sonner"
 import { RecordingModal } from "../components/ui/recording-modal"
 import { UploadIcon, MicIcon, Loader2, Calendar, Clock, FileText, Volume2, Info, Stethoscope, Building2, MapPin, Phone, ArrowRight } from "lucide-react"
 import { useAuth } from "../hooks/useAuth"
@@ -77,20 +77,14 @@ export default function RespiratoryAnalysis() {
   const [analysisResult, setAnalysisResult] = useState<SafeAnalysisResponse | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { toast } = useToast()
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (only on initial mount, not on logout)
   useEffect(() => {
     if (!isLoggedIn) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to use the respiratory analysis feature",
-        variant: "destructive",
-      })
-      navigate('/login')
+      navigate('/login', { replace: true })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoggedIn, navigate])
+  }, [])
   
   // If not logged in, don't render the component
   if (!isLoggedIn) {
@@ -159,12 +153,7 @@ export default function RespiratoryAnalysis() {
       
       if (!token) {
         setUploadError("Authentication required. Please log in first.")
-        toast({
-          title: "Authorization Error",
-          description: "Please log in to use this feature",
-          variant: "destructive",
-          duration: 5000, // Set longer duration (5 seconds)
-        })
+        toast.error("Please log in to use this feature")
         return
       }
 
@@ -234,23 +223,14 @@ export default function RespiratoryAnalysis() {
       }
       
       setAnalysisResult(transformedResult)
-      toast({
-        title: "Analysis Complete",
-        description: "Your breathing has been analyzed successfully",
-        duration: 5000, // Set longer duration (5 seconds)
-      })
+      toast.success("Your breathing has been analyzed successfully")
     } catch (error) {
       console.error("Error uploading file:", error)
       
       // Show the specific error message to the user
       const errorMessage = error instanceof Error ? error.message : "Failed to process your recording. Please try again."
       setUploadError(errorMessage)
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-        duration: 5000, // Set longer duration (5 seconds)
-      })
+      toast.error(errorMessage)
 
       // For development/testing - simulate a response
       if (process.env.NODE_ENV === 'development' && !uploadError?.includes("token")) {

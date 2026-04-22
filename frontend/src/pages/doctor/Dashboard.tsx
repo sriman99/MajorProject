@@ -103,7 +103,7 @@ export default function DoctorDashboard() {
 
   const handleStartConsultation = (appointment: AppointmentWithPatient) => {
     console.log("Starting consultation for:", appointment)
-    navigate(`/doctor/consultation/${appointment.id}`)
+    navigate(`/appointments/manage`)
   }
 
   const handleViewSchedule = () => {
@@ -111,7 +111,7 @@ export default function DoctorDashboard() {
   }
 
   const handleViewPatient = (patientId: string) => {
-    navigate(`/doctor/patients/${patientId}`)
+    navigate('/appointments/manage')
   }
 
   const handleManageAppointments = () => {
@@ -505,7 +505,7 @@ export default function DoctorDashboard() {
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Recent Patients</CardTitle>
-              <Button variant="outline" size="sm" onClick={() => navigate('/appointments/book')}>
+              <Button variant="outline" size="sm" onClick={() => navigate('/appointments/manage')}>
                 <Plus className="w-4 h-4 mr-2" />
                 New Appointment
               </Button>
@@ -545,7 +545,7 @@ export default function DoctorDashboard() {
                     variant="outline"
                     size="sm"
                     className="mt-4"
-                    onClick={() => navigate('/appointments/book')}
+                    onClick={() => navigate('/appointments/manage')}
                   >
                     Book First Appointment
                   </Button>

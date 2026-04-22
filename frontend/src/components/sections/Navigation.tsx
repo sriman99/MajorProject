@@ -3,7 +3,7 @@ import { MobileMenu } from "../ui/mobile-menu"
 import { Link, useNavigate } from "react-router-dom"
 import { UserCircle, LogOut, Stethoscope, Calendar, MessageCircle } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner"
 import { useUserRole } from "@/hooks/useUserRole"
 import { NotificationCenter } from "../NotificationCenter"
 

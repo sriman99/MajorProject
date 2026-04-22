@@ -5,7 +5,7 @@ import { Label } from "../components/ui/label"
 import { assets } from "../config/assets"
 import { motion } from "framer-motion"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner"
 import { authApi } from "@/services/api"
 import { Eye, EyeOff, CheckCircle2 } from "lucide-react"
 

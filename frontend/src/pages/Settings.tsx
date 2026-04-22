@@ -9,7 +9,8 @@ import { Avatar } from '@/components/ui/avatar'
 import { useAuthWithFetch } from '@/hooks/useAuth'
 import { usersApi, type UserProfileUpdate, type PasswordChange } from '@/services/api'
 import { toast } from 'sonner'
-import { Loader2, User, Lock, Bell, UserX, Camera } from 'lucide-react'
+import { Loader2, User, Lock, Bell, UserX, Camera, Stethoscope } from 'lucide-react'
+import { doctorsApi } from '@/services/api'
 
 export default function Settings() {
   const { user, fetchUser } = useAuthWithFetch()
@@ -36,6 +37,15 @@ export default function Settings() {
   // Avatar preview
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
+  // Doctor profile state
+  const [doctorData, setDoctorData] = useState({
+    qualifications: '',
+    experience: '',
+    specialties: '',
+    languages: '',
+  })
+  const [doctorLoading, setDoctorLoading] = useState(false)
+
   // Initialize profile data when user is loaded
   useEffect(() => {
     if (user) {
@@ -44,6 +54,15 @@ export default function Settings() {
         phone: user.phone || '',
         username: user.username || '',
       })
+      // Load doctor profile if doctor
+      if (user.role === 'doctor' && user.doctor_profile) {
+        setDoctorData({
+          qualifications: user.doctor_profile.qualifications || '',
+          experience: user.doctor_profile.experience || '',
+          specialties: (user.doctor_profile.specialties || []).join(', '),
+          languages: (user.doctor_profile.languages || []).join(', '),
+        })
+      }
     }
   }, [user])
 
@@ -187,6 +206,29 @@ export default function Settings() {
       setAvatarPreview(null)
     } finally {
       setAvatarLoading(false)
+    }
+  }
+
+  // Handle doctor profile update
+  const handleDoctorProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user?.doctor_profile?.id) return
+
+    setDoctorLoading(true)
+    try {
+      await doctorsApi.updateProfile(user.doctor_profile.id, {
+        qualifications: doctorData.qualifications,
+        experience: doctorData.experience,
+        specialties: doctorData.specialties.split(',').map(s => s.trim()).filter(Boolean),
+        languages: doctorData.languages.split(',').map(l => l.trim()).filter(Boolean),
+      })
+      toast.success('Doctor profile updated successfully!')
+      await fetchUser()
+    } catch (error: any) {
+      console.error('Doctor profile update error:', error)
+      toast.error(error.response?.data?.detail || 'Failed to update doctor profile')
+    } finally {
+      setDoctorLoading(false)
     }
   }
 
@@ -369,6 +411,77 @@ export default function Settings() {
                   </form>
                 </CardContent>
               </Card>
+
+              {/* Doctor Profile Section - only for doctors */}
+              {user.role === 'doctor' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Stethoscope className="h-5 w-5" />
+                      Doctor Profile
+                    </CardTitle>
+                    <CardDescription>
+                      Update your professional information visible to patients
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleDoctorProfileUpdate} className="space-y-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="qualifications">Qualifications</Label>
+                        <Input
+                          id="qualifications"
+                          value={doctorData.qualifications}
+                          onChange={(e) => setDoctorData({ ...doctorData, qualifications: e.target.value })}
+                          placeholder="e.g., MBBS, MD Pulmonology"
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="experience">Experience</Label>
+                        <Input
+                          id="experience"
+                          value={doctorData.experience}
+                          onChange={(e) => setDoctorData({ ...doctorData, experience: e.target.value })}
+                          placeholder="e.g., 10 years"
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="specialties">Specialties</Label>
+                        <Input
+                          id="specialties"
+                          value={doctorData.specialties}
+                          onChange={(e) => setDoctorData({ ...doctorData, specialties: e.target.value })}
+                          placeholder="Comma separated, e.g., Pulmonology, Respiratory Medicine"
+                        />
+                        <p className="text-xs text-muted-foreground">Separate multiple specialties with commas</p>
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="languages">Languages</Label>
+                        <Input
+                          id="languages"
+                          value={doctorData.languages}
+                          onChange={(e) => setDoctorData({ ...doctorData, languages: e.target.value })}
+                          placeholder="Comma separated, e.g., English, Hindi, Telugu"
+                        />
+                        <p className="text-xs text-muted-foreground">Separate multiple languages with commas</p>
+                      </div>
+
+                      <Button type="submit" disabled={doctorLoading}>
+                        {doctorLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Update Doctor Profile'
+                        )}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </TabsContent>
 

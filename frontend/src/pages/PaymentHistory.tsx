@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { paymentsApi, appointmentsApi, type Payment, type Appointment } from '../services/api';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { CreditCard, Smartphone, Building2, Loader2, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 

@@ -30,28 +30,28 @@ export function DoctorHome() {
       title: 'Patient Messages',
       description: 'Communicate with your patients through secure messaging',
       icon: <MessageCircle className="h-10 w-10 text-purple-500" />,
-      action: () => navigate('/doctor/messages'),
+      action: () => navigate('/doctor/dashboard'),
       bgColor: 'bg-purple-50'
     },
     {
       title: 'Medical Records',
       description: 'Access patient medical records and test results',
       icon: <FileText className="h-10 w-10 text-red-500" />,
-      action: () => navigate('/doctor/records'),
+      action: () => navigate('/doctor/dashboard'),
       bgColor: 'bg-red-50'
     },
     {
       title: 'Patient Directory',
       description: 'View and manage your patient directory',
       icon: <Users className="h-10 w-10 text-amber-500" />,
-      action: () => navigate('/doctor/patients'),
+      action: () => navigate('/doctor/dashboard'),
       bgColor: 'bg-amber-50'
     },
     {
       title: 'Medical Resources',
       description: 'Access medical literature and treatment guidelines',
       icon: <BookOpen className="h-10 w-10 text-teal-500" />,
-      action: () => navigate('/doctor/resources'),
+      action: () => navigate('/doctor/dashboard'),
       bgColor: 'bg-teal-50'
     }
   ]

@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import apiClient from "@/services/api"
 import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
+import { useNavigate } from "react-router-dom"
 
 interface BookingModalProps {
   isOpen: boolean
@@ -16,6 +17,7 @@ interface BookingModalProps {
 }
 
 export function BookingModal({ isOpen, onClose, doctorId, doctorName, patientId }: BookingModalProps) {
+  const navigate = useNavigate()
   const [date, setDate] = useState("")
   const [time, setTime] = useState("")
   const [reason, setReason] = useState("")
@@ -78,12 +80,14 @@ export function BookingModal({ isOpen, onClose, doctorId, doctorName, patientId 
       console.log('Response received:', response.data)
 
       // Axios throws for non-2xx, so if we get here it's a success
-      toast.success("Appointment booked successfully! You will receive a confirmation email shortly.")
+      toast.success("Appointment booked successfully! Redirecting to your appointments...")
       onClose()
       // Reset form
       setDate("")
       setTime("")
       setReason("")
+      // Redirect to appointment management
+      setTimeout(() => navigate('/appointments/manage'), 1000)
     } catch (err: any) {
       console.error("Error booking appointment:", err)
       if (err.response) {

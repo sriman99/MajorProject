@@ -3,11 +3,13 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar, Clock, FileText, UserCircle, AlertCircle } from "lucide-react"
+import { Calendar, Clock, FileText, UserCircle, AlertCircle, CreditCard, CheckCircle2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { AppointmentStatusUpdate } from "@/components/AppointmentStatusUpdate"
 import { useAuthWithFetch } from "@/hooks/useAuth"
 import { Skeleton } from "@/components/ui/skeleton"
 import apiClient from "@/services/api"
+import { paymentsApi } from "@/services/api"
 import { toast } from "sonner"
 
 interface Appointment {
@@ -31,6 +33,11 @@ export default function AppointmentManagement() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("all")
   const [doctorInfo, setDoctorInfo] = useState<any>(null)
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [payingAppointmentId, setPayingAppointmentId] = useState<string | null>(null)
+  const [paymentProcessing, setPaymentProcessing] = useState(false)
+  const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [paidAppointments, setPaidAppointments] = useState<Set<string>>(new Set())
 
   const fetchAppointments = async () => {
     try {
@@ -97,6 +104,33 @@ export default function AppointmentManagement() {
   useEffect(() => {
     fetchAppointments()
   }, [])
+
+  const handlePayNow = (appointmentId: string) => {
+    setPayingAppointmentId(appointmentId)
+    setPaymentSuccess(false)
+    setPaymentModalOpen(true)
+  }
+
+  const processPayment = async () => {
+    if (!payingAppointmentId) return
+    setPaymentProcessing(true)
+    try {
+      await paymentsApi.create({
+        appointment_id: payingAppointmentId,
+        amount: 500,
+        payment_method: 'card',
+      })
+      setPaidAppointments(prev => new Set(prev).add(payingAppointmentId))
+      setPaymentSuccess(true)
+      toast.success("Payment completed successfully!")
+    } catch (err: any) {
+      console.error('Payment error:', err)
+      toast.error(err.response?.data?.detail || "Payment failed. Please try again.")
+      setPaymentModalOpen(false)
+    } finally {
+      setPaymentProcessing(false)
+    }
+  }
 
   // Debug logging to help diagnose issues
   useEffect(() => {
@@ -262,12 +296,29 @@ export default function AppointmentManagement() {
                           Created: {new Date(appointment.created_at).toLocaleDateString()} at {' '}
                           {new Date(appointment.created_at).toLocaleTimeString()}
                         </p>
-                        <div className="mt-auto pt-4 w-full max-w-[200px]">
-                          <AppointmentStatusUpdate 
+                        <div className="mt-auto pt-4 w-full max-w-[200px] space-y-2">
+                          <AppointmentStatusUpdate
                             appointmentId={appointment.id}
                             currentStatus={appointment.status}
                             onStatusUpdate={fetchAppointments}
                           />
+                          {user?.role !== 'doctor' && appointment.status === 'confirmed' && (
+                            paidAppointments.has(appointment.id) ? (
+                              <div className="flex items-center gap-1 text-sm text-green-600 font-medium">
+                                <CheckCircle2 className="h-4 w-4" />
+                                Paid
+                              </div>
+                            ) : (
+                              <Button
+                                size="sm"
+                                className="w-full bg-green-600 hover:bg-green-700"
+                                onClick={() => handlePayNow(appointment.id)}
+                              >
+                                <CreditCard className="h-4 w-4 mr-2" />
+                                Pay Now
+                              </Button>
+                            )
+                          )}
                         </div>
                       </div>
                     </div>
@@ -295,6 +346,73 @@ export default function AppointmentManagement() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Payment Modal */}
+      <Dialog open={paymentModalOpen} onOpenChange={(open) => {
+        if (!paymentProcessing) {
+          setPaymentModalOpen(open)
+          if (!open) setPaymentSuccess(false)
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          {paymentSuccess ? (
+            <div className="text-center py-6">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              </div>
+              <DialogHeader>
+                <DialogTitle className="text-center text-xl">Payment Successful!</DialogTitle>
+                <DialogDescription className="text-center">
+                  Your consultation fee of ₹500 has been paid successfully. You will receive a confirmation shortly.
+                </DialogDescription>
+              </DialogHeader>
+              <Button className="mt-6" onClick={() => setPaymentModalOpen(false)}>
+                Done
+              </Button>
+            </div>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Pay Consultation Fee</DialogTitle>
+                <DialogDescription>
+                  Complete payment for your confirmed appointment
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Consultation Fee</span>
+                  <span className="text-lg font-bold">₹500</span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Platform Fee</span>
+                  <span className="text-lg font-bold">₹0</span>
+                </div>
+                <div className="border-t pt-3 flex justify-between items-center">
+                  <span className="font-medium">Total</span>
+                  <span className="text-xl font-bold text-green-600">₹500</span>
+                </div>
+              </div>
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700"
+                onClick={processPayment}
+                disabled={paymentProcessing}
+              >
+                {paymentProcessing ? (
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Processing...
+                  </div>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Pay ₹500
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   )
 } 

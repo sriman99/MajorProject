@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { paymentsApi, appointmentsApi, type Appointment } from '../services/api';
 import { CreditCard, Smartphone, Building2, CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -236,7 +236,7 @@ export default function Payment() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Payment Method Selection */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                   <button
                     onClick={() => setPaymentMethod('card')}
                     className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 transition-all ${
@@ -294,7 +294,7 @@ export default function Payment() {
                         maxLength={19}
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
                         <Label htmlFor="expiry">Expiry Date</Label>
                         <Input

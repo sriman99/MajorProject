@@ -25,7 +25,7 @@ export const useMessages = () => {
     queryKey: ['messages', user?.id],
     queryFn: async (): Promise<Message[]> => {
       if (!isLoggedIn || !user) return []
-      
+
       try {
         const token = localStorage.getItem('access_token')
         const response = await apiClient.get<Message[]>('/messages', {
@@ -34,13 +34,14 @@ export const useMessages = () => {
           }
         })
         return response.data
-      } catch (error) {
-        console.error('Error fetching messages:', error)
-        throw error
+      } catch {
+        // /messages endpoint not yet implemented - return empty silently
+        return []
       }
     },
     enabled: isLoggedIn && !!user,
-    refetchInterval: 30000, // Poll every 30 seconds for new messages
+    retry: false, // Don't retry since endpoint doesn't exist yet
+    refetchInterval: false, // Don't poll a non-existent endpoint
   })
 
   // Add a message manually (for WebSocket messages)
@@ -80,25 +81,25 @@ export const useMessages = () => {
     enabled: isLoggedIn && !!user && !!messages,
   })
 
-  // Send a new message
+  // Send a new message (REST endpoint not yet implemented - uses WebSocket instead)
   const sendMessage = useMutation({
     mutationFn: async ({ receiverId, content }: { receiverId: string, content: string }) => {
       if (!isLoggedIn || !user) throw new Error('You must be logged in to send messages')
-      
+
       const token = localStorage.getItem('access_token')
       const response = await apiClient.post('/messages', {
         receiver_id: receiverId,
         content
       }, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       })
       return response.data
     },
     onSuccess: () => {
-      // Invalidate queries to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['messages'] })
+    },
+    onError: () => {
+      // Endpoint not yet implemented — fail silently
     },
   })
 
@@ -106,32 +107,28 @@ export const useMessages = () => {
   const markAsRead = useMutation({
     mutationFn: async (messageId: string) => {
       if (!isLoggedIn || !user) throw new Error('You must be logged in')
-      
+
       const token = localStorage.getItem('access_token')
       const response = await apiClient.patch(`/messages/${messageId}/read`, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       })
       return response.data
     },
     onSuccess: () => {
-      // Invalidate queries to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['messages'] })
       queryClient.invalidateQueries({ queryKey: ['unreadMessages'] })
     },
+    onError: () => {},
   })
 
   // Mark all messages as read
   const markAllAsRead = useMutation({
     mutationFn: async () => {
       if (!isLoggedIn || !user) throw new Error('You must be logged in')
-      
+
       const token = localStorage.getItem('access_token')
       const response = await apiClient.patch('/messages/read-all', {}, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       })
       return response.data
     },
@@ -139,6 +136,7 @@ export const useMessages = () => {
       queryClient.invalidateQueries({ queryKey: ['messages'] })
       queryClient.invalidateQueries({ queryKey: ['unreadMessages'] })
     },
+    onError: () => {},
   })
 
   // Combine API fetched messages with local WebSocket messages

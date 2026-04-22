@@ -209,11 +209,11 @@ export function ChatBot() {
           damping: 20,
           duration: 0.5
         }}
-        className="fixed bottom-6 right-6 z-50"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50"
       >
         <Button
           onClick={() => setIsOpen(true)}
-          className="rounded-full w-16 h-16 bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90 shadow-lg hover:shadow-xl transition-all group relative overflow-hidden"
+          className="rounded-full w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-[#ff7757] to-[#ff5757] hover:opacity-90 shadow-lg hover:shadow-xl transition-all group relative overflow-hidden"
         >
           <motion.div
             animate={{ 
@@ -250,7 +250,7 @@ export function ChatBot() {
               stiffness: 300,
               damping: 25
             }}
-            className={`fixed ${isMinimized ? 'bottom-24 right-6 w-96 h-32' : 'bottom-24 right-6 w-96 h-[600px]'} bg-white rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden`}
+            className={`fixed ${isMinimized ? 'bottom-20 right-4 sm:bottom-24 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-32' : 'bottom-20 right-4 sm:bottom-24 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[calc(100vh-6rem)] sm:h-[600px]'} bg-white rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden`}
           >
             <div className="p-4 border-b flex justify-between items-center bg-gradient-to-r from-[#ff7757] to-[#ff5757] text-white rounded-t-xl">
               <div className="flex items-center gap-2">

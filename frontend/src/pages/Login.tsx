@@ -3,10 +3,11 @@ import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { assets } from "../config/assets"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
+import { CheckCircle2 } from "lucide-react"
 import apiClient from "@/services/api"
 import { useNavigate, Link } from "react-router-dom"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner"
 import { useAuth } from "@/hooks/useAuth"
 import { GoogleLogin, type CredentialResponse } from "@react-oauth/google"
 
@@ -21,6 +22,25 @@ export default function Login() {
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [shake, setShake] = useState(false)
+
+  const handleFieldChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
+  }
+
+  const isFieldValid = (field: string) => {
+    if (field === "email") return formData.email && /\S+@\S+\.\S+/.test(formData.email)
+    if (field === "password") return formData.password.length > 0
+    return false
+  }
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -33,6 +53,10 @@ export default function Login() {
     if (!formData.password) newErrors.password = "Password is required"
 
     setErrors(newErrors)
+    if (Object.keys(newErrors).length > 0) {
+      setShake(true)
+      setTimeout(() => setShake(false), 500)
+    }
     return Object.keys(newErrors).length === 0
   }
 
@@ -45,7 +69,7 @@ export default function Login() {
       })
       await login(response.data.access_token)
       toast.success("Login successful!")
-      navigate("/")
+      navigate("/dashboard")
     } catch (error: any) {
       if (error.response?.status === 400 && error.response?.data?.detail?.includes("Role")) {
         // New user trying to login — redirect to signup
@@ -100,10 +124,10 @@ export default function Login() {
           password: ""
         })
         
-        // Navigate to home page after a short delay
+        // Navigate to role-based dashboard
         setTimeout(() => {
-          navigate("/")
-        }, 1500)
+          navigate("/dashboard")
+        }, 500)
         
       } catch (error: any) {
         console.error("Login error:", error.response?.data || error) // Debug log
@@ -195,57 +219,80 @@ export default function Login() {
             <p className="text-gray-600">Sign in to continue your health journey</p>
           </motion.div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <motion.div 
+          <motion.form
+            onSubmit={handleSubmit}
+            className="space-y-6"
+            animate={shake ? { x: [0, -10, 10, -10, 10, 0] } : {}}
+            transition={{ duration: 0.4 }}
+          >
+            <motion.div
               className="space-y-2"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className={errors.email ? "border-red-500" : ""}
-              />
-              {errors.email && (
-                <motion.p 
-                  className="text-red-500 text-sm"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {errors.email}
-                </motion.p>
-              )}
+              <div className="relative">
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={(e) => handleFieldChange("email", e.target.value)}
+                  className={`pr-10 transition-colors ${errors.email ? "border-red-500 focus:ring-red-500" : isFieldValid("email") ? "border-green-500 focus:ring-green-500" : ""}`}
+                />
+                {isFieldValid("email") && !errors.email && (
+                  <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                )}
+              </div>
+              <AnimatePresence>
+                {errors.email && (
+                  <motion.p
+                    className="text-red-500 text-sm"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {errors.email}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="space-y-2"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className={errors.password ? "border-red-500" : ""}
-              />
-              {errors.password && (
-                <motion.p 
-                  className="text-red-500 text-sm"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {errors.password}
-                </motion.p>
-              )}
+              <div className="relative">
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => handleFieldChange("password", e.target.value)}
+                  className={`pr-10 transition-colors ${errors.password ? "border-red-500 focus:ring-red-500" : isFieldValid("password") ? "border-green-500 focus:ring-green-500" : ""}`}
+                />
+                {isFieldValid("password") && !errors.password && (
+                  <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-green-500" />
+                )}
+              </div>
+              <AnimatePresence>
+                {errors.password && (
+                  <motion.p
+                    className="text-red-500 text-sm"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {errors.password}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </motion.div>
 
             <motion.div 
@@ -338,7 +385,7 @@ export default function Login() {
                 Sign up
               </Link>
             </motion.p>
-          </form>
+          </motion.form>
         </motion.div>
       </div>
     </div>

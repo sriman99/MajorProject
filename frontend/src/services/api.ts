@@ -185,6 +185,12 @@ export const doctorsApi = {
     const response = await apiClient.get<AppointmentWithPatient[]>('/doctors/me/schedule', { params });
     return response.data;
   },
+
+  // Update doctor profile
+  updateProfile: async (doctorId: string, data: Partial<Doctor>): Promise<Doctor> => {
+    const response = await apiClient.put<Doctor>(`/doctors/${doctorId}`, data);
+    return response.data;
+  },
 };
 
 // =============================================

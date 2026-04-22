@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { assets } from "../config/assets"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner"
 import { authApi } from "@/services/api"
 import { ArrowLeft, Mail } from "lucide-react"
 
